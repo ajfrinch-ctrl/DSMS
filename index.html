@@ -6,6 +6,12 @@
 <meta name="theme-color" content="#e9f7ef">
 <title>ধ্রুব সংসদ — Offline Management System</title>
 <style>
+  .firebase-status { font-size: 12px; margin: 8px 0; text-align: center; }
+  .firebase-online { color: #2d8a57; }
+  .firebase-offline { color: #d88a35; }
+  .firebase-connecting { color: #6b7470; }
+</style>
+<style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,"Noto Sans Bengali",sans-serif;background:#f5f7f6;color:#202725;font-size:14px; -webkit-text-size-adjust:100%}button,input,select,textarea{font:inherit}button{border:0;border-radius:8px;padding:10px 14px;cursor:pointer;touch-action:manipulation}.hidden{display:none!important}.login{min-height:100vh;display:grid;place-items:center;padding:16px;background:linear-gradient(#fff,#f1faf5)}.login-card{width:min(390px,100%);background:#fff;border:1px solid #dce8e1;border-radius:16px;padding:20px;box-shadow:0 8px 28px #00000010}.brand{text-align:center;font-size:22px;font-weight:700;margin-bottom:16px}.sub{text-align:center;color:#6b7470;font-size:12px;margin-top:-10px;margin-bottom:16px}.field{margin-bottom:12px}.field label{display:block;font-size:12px;font-weight:700;margin-bottom:6px}.field input,.field select,.field textarea{width:100%;border:1px solid #ccd8d2;border-radius:8px;padding:10px;background:#fff;font-size:14px}.primary{background:#5eaa7b;color:#fff}.danger{background:#d86d6d;color:#fff}.neutral{background:#fff;border:1px solid #cfd8d3}.warn{background:#fff0bd}
 .topbar{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid #dce5e0;padding:10px 12px;display:flex;align-items:center;justify-content:space-between}.topbar strong{font-size:16px}.userbox{display:flex;gap:6px;align-items:center;font-size:12px}
 
@@ -47,15 +53,16 @@
 <body>
 <div id="app"></div>
 <script>
+// Firebase Configuration - as specified by user
 window.DHRUVO_FIREBASE_CONFIG = {
- apiKey:"AIzaSyBig1Ajmtb4wBSQI3B0Ie16DoSODeIZiDs",
- authDomain:"dhruvo-sangsad.firebaseapp.com",
- databaseURL:"https://dhruvo-sangsad-default-rtdb.asia-southeast1.firebasedatabase.app",
- projectId:"dhruvo-sangsad",
- storageBucket:"dhruvo-sangsad.firebasestorage.app",
- messagingSenderId:"262988571932",
- appId:"1:262988571932:web:13be08e891d7d2a11986d9",
- measurementId:"G-X159JBNZKQ"
+ apiKey: "AIzaSyBig1Ajmtb4wBSQI3B0Ie16DoSODeIZiDs",
+ authDomain: "dhruvo-sangsad.firebaseapp.com",
+ databaseURL: "https://dhruvo-sangsad-default-rtdb.asia-southeast1.firebasedatabase.app",
+ projectId: "dhruvo-sangsad",
+ storageBucket: "dhruvo-sangsad.firebasestorage.app",
+ messagingSenderId: "262988571932",
+ appId: "1:262988571932:web:13be08e891d7d2a11986d9",
+ measurementId: "G-X159JBNZKQ"
 };
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -97,39 +104,100 @@ function fbEmailForMaker(m){return `${String(m.username||m.id).toLowerCase().rep
 const fbAdminEmail="admin@admin.dhruvo-sangsad.local";
 
 async function firebaseInit(){
-  if(!fbConfigReady() || !window.firebase)return false;
+  if(!fbConfigReady() || !window.firebase) {
+    fbReady = false;
+    updateFirebaseStatus(false);
+    return false;
+  }
   try{
-    fbApp=window.firebase.apps?.length ? window.firebase.app() : window.firebase.initializeApp(window.DHRUVO_FIREBASE_CONFIG);
-    fbAuth=window.firebase.auth();
-    fbDb=window.firebase.database();
-    try{if(window.firebase.analytics)window.firebase.analytics();}catch(_e){}
-    fbSecondary=window.firebase.apps.find(a=>a.name==="DhruvoSecondary") ||
-      window.firebase.initializeApp(window.DHRUVO_FIREBASE_CONFIG,"DhruvoSecondary");
-    fbSecondaryAuth=fbSecondary.auth();
+    // Initialize Firebase
+    fbApp = window.firebase.apps?.length ? window.firebase.app() : window.firebase.initializeApp(window.DHRUVO_FIREBASE_CONFIG);
+    fbAuth = window.firebase.auth();
+    fbDb = window.firebase.database();
+    
+    // Initialize Analytics if available
+    try {
+      if(window.firebase.analytics) window.firebase.analytics();
+    } catch(_e) {
+      console.warn("Firebase Analytics not available", _e);
+    }
+    
+    // Initialize secondary app for auth operations
+    fbSecondary = window.firebase.apps.find(a => a.name === "DhruvoSecondary") ||
+      window.firebase.initializeApp(window.DHRUVO_FIREBASE_CONFIG, "DhruvoSecondary");
+    fbSecondaryAuth = fbSecondary.auth();
 
-    fbAuth.onAuthStateChanged(async user=>{
+    // Set connecting state initially
+    updateFirebaseStatus(null);
+
+    // Setup Firebase auth state change listener
+    fbAuth.onAuthStateChanged(async user => {
       if(user) await fbEnsureUserRole(user);
-      updateFirebaseStatus(true);
     });
-    fbDb.ref(".info/connected").on("value",snap=>{
-      const connected=snap.val()===true;
-      fbReady=connected;
+
+    // Setup Firebase connection state listener - THIS IS CRITICAL
+    const connectedRef = fbDb.ref(".info/connected");
+    connectedRef.on("value", snap => {
+      const connected = snap.val() === true;
+      fbReady = connected;
       updateFirebaseStatus(connected);
-      if(connected) syncQueue();
+      if(connected) {
+        syncQueue();
+      }
     });
+
+    // Also do an immediate check
+    connectedRef.once("value", snap => {
+      const connected = snap.val() === true;
+      fbReady = connected;
+      updateFirebaseStatus(connected);
+    }).catch(() => {
+      fbReady = false;
+      updateFirebaseStatus(false);
+    });
+
     return true;
-  }catch(e){
-    console.error("Firebase init",e);
-    fbReady=false; updateFirebaseStatus(false);
+  } catch(e) {
+    console.error("Firebase init error:", e);
+    fbReady = false;
+    updateFirebaseStatus(false);
     return false;
   }
 }
 
 function updateFirebaseStatus(connected){
+  // connected can be: true, false, or null/undefined (connecting)
+  const isOnline = connected === true;
+  const isOffline = connected === false;
+  const isConnecting = connected !== true && connected !== false;
+  
   const el=document.getElementById("firebaseStatus");
   if(el){
-    el.textContent=connected?"● Firebase Online":"● Offline / Local";
-    el.style.color=connected?"#2d8a57":"#d88a35";
+    if(isOnline) {
+      el.textContent = "● Firebase Online";
+      el.style.color = "#2d8a57";
+    } else if(isOffline) {
+      el.textContent = "● Offline / Local";
+      el.style.color = "#d88a35";
+    } else {
+      el.textContent = "● Firebase Connecting...";
+      el.style.color = "#6b7470";
+    }
+  }
+  
+  // Update login page Firebase status
+  const loginEl=document.getElementById("firebaseLoginStatus");
+  if(loginEl){
+    if(isOnline) {
+      loginEl.textContent = "● Firebase Online";
+      loginEl.className = "firebase-status firebase-online";
+    } else if(isOffline) {
+      loginEl.textContent = "● Offline / Local";
+      loginEl.className = "firebase-status firebase-offline";
+    } else {
+      loginEl.textContent = "● Firebase Connecting...";
+      loginEl.className = "firebase-status firebase-connecting";
+    }
   }
 }
 function addFirebaseStatusToTopbar(){
@@ -139,8 +207,17 @@ function addFirebaseStatusToTopbar(){
     const s=document.createElement("span");
     s.id="firebaseStatus";
     s.style.cssText="font-size:11px;font-weight:700;margin-right:4px";
-    s.textContent=fbReady?"● Firebase Online":"● Offline / Local";
+    // Use the current fbReady value
+    s.textContent=fbReady===true?"● Firebase Online":fbReady===false?"● Offline / Local":"● Firebase Connecting...";
+    s.style.color=fbReady===true?"#2d8a57":fbReady===false?"#d88a35":"#6b7470";
     tb.insertBefore(s,tb.firstChild);
+  } else {
+    // Update existing status element
+    const el=document.getElementById("firebaseStatus");
+    if(el) {
+      el.textContent=fbReady===true?"● Firebase Online":fbReady===false?"● Offline / Local":"● Firebase Connecting...";
+      el.style.color=fbReady===true?"#2d8a57":fbReady===false?"#d88a35":"#6b7470";
+    }
   }
 }
 
@@ -544,7 +621,7 @@ function parseDMY(s){const [d,m,y]=String(s).split("-").map(Number);return new D
 function calc(member, deposits){let total=deposits.filter(x=>x.memberId===member.memberId&&x.status==="approved").reduce((a,x)=>a+Number(x.amount||0),0);const start=new Date(parseDMY(member.approvedAt||today()));const now=new Date();let months=(now.getFullYear()-start.getFullYear())*12+(now.getMonth()-start.getMonth())+1;if(months<0)months=0;let required=Math.max(0,months*Number(member.monthlyInstallment||0));let due=Math.max(0,required-total), advance=Math.max(0,total-required);return {total,due,advance,required}}
 async function log(action,details=""){if(!session)return;const rec={id:id(),user:session.username||session.memberId,role:session.role,action,details,date:today(),time:new Date().toLocaleTimeString(),createdAt:Date.now(),updatedAt:Date.now()};await put("activityLogs",rec);await queue("createActivityLog",rec);if(fbReady)syncQueue();}
 
-function renderLogin(){document.body.innerHTML=`<div class="login"><div class="login-card"><div class="brand">ধ্রুব সংসদ</div><div class="sub">Offline-first Member & Deposit Management</div><form id="loginForm"><div class="field"><label>User ID / Mobile Number</label><input id="uid" required autocomplete="username"></div><div class="field"><label>Password</label><input id="pw" type="password" required autocomplete="current-password"></div><button class="primary" style="width:100%">Login / লগইন</button></form><button class="neutral" id="reg" style="width:100%;margin-top:8px">Member Registration</button><button class="neutral" id="forgot" style="width:100%;margin-top:8px">Forgot Password</button><div class="notice" style="margin-top:12px">First installation bootstrap: <b>admin / admin</b>. Change it immediately in Admin Setup.</div></div></div>`;
+function renderLogin(){document.body.innerHTML=`<div class="login"><div class="login-card"><div class="brand">ধ্রুব সংসদ</div><div class="sub">Offline-first Member & Deposit Management</div><div id="firebaseLoginStatus" class="firebase-status firebase-connecting">● Firebase Connecting...</div><form id="loginForm"><div class="field"><label>User ID / Mobile Number</label><input id="uid" required autocomplete="username"></div><div class="field"><label>Password</label><input id="pw" type="password" required autocomplete="current-password"></div><button class="primary" style="width:100%">Login / লগইন</button></form><button class="neutral" id="reg" style="width:100%;margin-top:8px">Member Registration</button><button class="neutral" id="forgot" style="width:100%;margin-top:8px">Forgot Password</button><div class="notice" style="margin-top:12px">First installation bootstrap: <b>admin / admin</b>. Change it immediately in Admin Setup.</div></div></div>`;
 $("#loginForm").onsubmit=async e=>{e.preventDefault();await login($("#uid").value,$("#pw").value)};
 $("#reg").onclick=()=>renderRegistration(); $("#forgot").onclick=()=>toast("Password recovery requires your configured Firebase Authentication flow.")}
 
@@ -570,6 +647,10 @@ async function login(uid,pw){
    // Firebase/network problems can never block the Top Tab Bar.
    renderApp();
    if(fbReady)startCloudAfterLogin("ADMIN");
+   
+   // Trigger login success event to clean up login page timers
+   const event = new CustomEvent('loginSuccess');
+   window.dispatchEvent(event);
    return;
  }
  let maker=members.find(x=>x.type==="maker"&&x.username===uid&&x.status==="active");
@@ -596,6 +677,10 @@ async function login(uid,pw){
    await log("Login/Logout Activity","Maker Logged In");
    renderApp();
    if(fbReady)startCloudAfterLogin("MAKER");
+   
+   // Trigger login success event to clean up login page timers
+   const event = new CustomEvent('loginSuccess');
+   window.dispatchEvent(event);
    return;
  }
  if(fbReady){
@@ -614,6 +699,10 @@ async function login(uid,pw){
      await log("Login/Logout Activity",`Member ${m.memberId} Logged In`);
      renderApp();
      startCloudAfterLogin("MEMBER");
+     
+     // Trigger login success event to clean up login page timers
+     const event = new CustomEvent('loginSuccess');
+     window.dispatchEvent(event);
      return;
    }
  }
@@ -628,6 +717,10 @@ async function login(uid,pw){
    await log("Login/Logout Activity",`Member ${m.memberId} Logged In`);
    renderApp();
    if(fbReady)startCloudAfterLogin("MEMBER");
+   
+   // Trigger login success event to clean up login page timers
+   const event = new CustomEvent('loginSuccess');
+   window.dispatchEvent(event);
    return;
  }
  showAlertPopup("User ID বা Password সঠিক নয়। অনুগ্রহ করে সঠিক তথ্য দিয়ে পুনরায় চেষ্টা করুন।");
@@ -654,49 +747,101 @@ async function refreshCurrentView(){
 }
 
 async function fbStartRealtime(){
-  if(fbRealtimeStarted || !fbDb || !fbReady || !session)return;
-  try{await fbPullAllCloud()}catch(e){console.warn("Initial realtime pull",e)}
-  fbRealtimeStarted=true;
-  const activeSession=session;
-  const storesForRole=role(activeSession)==="MEMBER"
-    ? ["members","deposits","notifications","activityLogs"]
-    : ["members","deposits","notifications","activityLogs","settings"];
+  // Don't start if already started, no Firebase DB, not ready, or no session
+  if(fbRealtimeStarted || !fbDb || !fbReady || !session) {
+    console.log("fbStartRealtime: Not starting - already started:", fbRealtimeStarted, "fbDb:", !!fbDb, "fbReady:", fbReady, "session:", !!session);
+    return;
+  }
+  
+  console.log("Starting Firebase realtime listeners...");
+  
+  try {
+    // Initial pull to get current state
+    await fbPullAllCloud();
+  } catch(e) {
+    console.warn("Initial realtime pull error:", e);
+  }
+  
+  fbRealtimeStarted = true;
+  const activeSession = session;
+  const storesForRole = role(activeSession) === "MEMBER"
+    ? ["members", "deposits", "notifications", "activityLogs"]
+    : ["members", "deposits", "notifications", "activityLogs", "settings"];
 
-  storesForRole.forEach(store=>{
-    try{
-      let ref=fbDb.ref(`${FIREBASE_ROOT}/${store}`);
-      if(role(activeSession)==="MEMBER"){
-        if(store==="members") ref=fbDb.ref(`${FIREBASE_ROOT}/members/${activeSession.memberRecordId}`);
-        else if(store==="deposits") ref=fbDb.ref(`${FIREBASE_ROOT}/deposits`).orderByChild("memberId").equalTo(activeSession.memberId);
-        else if(store==="notifications") ref=fbDb.ref(`${FIREBASE_ROOT}/notifications`).orderByChild("memberId").equalTo(activeSession.memberId);
-        else if(store==="activityLogs") ref=fbDb.ref(`${FIREBASE_ROOT}/activityLogs`).orderByChild("user").equalTo(activeSession.memberId);
+  console.log("Setting up realtime listeners for stores:", storesForRole);
+
+  storesForRole.forEach(store => {
+    try {
+      let ref = fbDb.ref(`${FIREBASE_ROOT}/${store}`);
+      
+      // Apply role-based filtering for members
+      if(role(activeSession) === "MEMBER") {
+        if(store === "members") {
+          ref = fbDb.ref(`${FIREBASE_ROOT}/members/${activeSession.memberRecordId}`);
+        } else if(store === "deposits") {
+          ref = fbDb.ref(`${FIREBASE_ROOT}/deposits`).orderByChild("memberId").equalTo(activeSession.memberId);
+        } else if(store === "notifications") {
+          ref = fbDb.ref(`${FIREBASE_ROOT}/notifications`).orderByChild("memberId").equalTo(activeSession.memberId);
+        } else if(store === "activityLogs") {
+          ref = fbDb.ref(`${FIREBASE_ROOT}/activityLogs`).orderByChild("user").equalTo(activeSession.memberId);
+        }
       }
-      const handler=async snap=>{
-        try{
-          const data=snap.val();
-          if(data==null)return;
-          const rows=[];
-          if(store==="members" && role(activeSession)==="MEMBER" && data.id) rows.push(data);
-          else if(data && typeof data==="object")Object.keys(data).forEach(k=>{if(data[k]&&typeof data[k]==="object")rows.push({...data[k],id:data[k].id||k})});
-          let changed=false;
-          for(const row of rows){
-            if(!row.id)continue;
-            const local=await one(store,row.id);
-            const remoteTime=Number(row.updatedAt||row.createdAt||0);
-            const localTime=Number(local?.updatedAt||local?.createdAt||0);
-            if(!local || remoteTime>=localTime){
-              suppressCloudQueue=true;
-              try{await put(store,row)}finally{suppressCloudQueue=false}
-              changed=true;
+      
+      const handler = async snap => {
+        try {
+          const data = snap.val();
+          if(data == null) return;
+          
+          const rows = [];
+          if(store === "members" && role(activeSession) === "MEMBER" && data.id) {
+            rows.push(data);
+          } else if(data && typeof data === "object") {
+            Object.keys(data).forEach(k => {
+              if(data[k] && typeof data[k] === "object") {
+                rows.push({...data[k], id: data[k].id || k});
+              }
+            });
+          }
+          
+          let changed = false;
+          for(const row of rows) {
+            if(!row.id) continue;
+            const local = await one(store, row.id);
+            const remoteTime = Number(row.updatedAt || row.createdAt || 0);
+            const localTime = Number(local?.updatedAt || local?.createdAt || 0);
+            
+            if(!local || remoteTime >= localTime) {
+              suppressCloudQueue = true;
+              try {
+                await put(store, row);
+                changed = true;
+              } finally {
+                suppressCloudQueue = false;
+              }
             }
           }
-          if(changed)await refreshCurrentView();
-        }catch(e){console.warn("Firebase realtime listener",store,e)}
+          
+          if(changed) {
+            console.log("Firebase realtime: Data changed in", store, "refreshing view");
+            await refreshCurrentView();
+          }
+        } catch(e) {
+          console.warn("Firebase realtime listener error for", store, ":", e);
+        }
       };
-      ref.on("value",handler,err=>console.warn("Firebase realtime listener error",store,err));
-      realtimeHandlers.push({ref,handler});
-    }catch(e){console.warn("Firebase realtime setup",store,e)}
+      
+      ref.on("value", handler, err => {
+        console.warn("Firebase realtime listener setup error for", store, ":", err);
+      });
+      
+      realtimeHandlers.push({ref, handler});
+      console.log("Realtime listener set up for", store);
+    } catch(e) {
+      console.warn("Firebase realtime setup error for", store, ":", e);
+    }
   });
+  
+  console.log("Firebase realtime listeners started successfully");
 }
 
 let fbReconcileTimer=null;
@@ -710,15 +855,30 @@ function startFirebaseReconcileTimer(){
 
 async function startCloudAfterLogin(loginRole){
   try{
-    if(!fbReady||!session)return;
+    // Ensure Firebase is ready
+    if(!fbReady || !session) {
+      console.warn("Firebase not ready or no session, cannot start cloud sync");
+      return;
+    }
+    
+    // Pull cloud data first
     await bootstrapCloudSync();
+    
+    // Start realtime listeners
     await fbStartRealtime();
+    
+    // Process any queued operations
     await syncQueue();
-    // Cloud bootstrap may have changed the data shown on the first screen.
+    
+    // Refresh the current view with new data
     await refreshCurrentView();
+    
+    // Start periodic reconciliation
     startFirebaseReconcileTimer();
+    
+    console.log("Cloud sync started successfully for", loginRole);
   }catch(e){
-    console.warn("Cloud startup after login",e);
+    console.warn("Cloud startup after login error:", e);
     updateFirebaseStatus(false);
   }
 }
@@ -780,14 +940,25 @@ function renderApp(){
    renderLogin();
  };
 
+ // Add Firebase status to topbar
  addFirebaseStatusToTopbar();
+ 
+ // Set default active tab and route
  const defaultTabBtn=document.querySelector('[data-nav="home"]')||document.querySelector('[data-nav]');
  if(defaultTabBtn){
    defaultTabBtn.classList.add("active-tab");
    route(defaultTabBtn.dataset.nav);
  }
- // Realtime setup is deliberately deferred so it can never block tab wiring.
- setTimeout(()=>{try{fbStartRealtime()}catch(e){console.warn("Realtime start",e)}},0);
+ 
+ // Start realtime listeners after a short delay to ensure DOM is ready
+ setTimeout(()=>{
+   try{
+     fbStartRealtime();
+   }catch(e){
+     console.warn("Realtime start error:", e);
+   }
+ }, 100);
+ 
  if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 }
 
@@ -2086,23 +2257,84 @@ function togglePasswordVisibility(fieldId, btn){
 
 async function init(){
  try{
+   // Initialize IndexedDB first
    await openDB();
-   online=navigator.onLine;
-   await firebaseInit();
-   session=loadSession();
-   if(session){
-     if(session.memberRecordId && !session.memberRecord)session.memberRecord=await one("members",session.memberRecordId);
+   
+   // Check online status
+   online = navigator.onLine;
+   
+   // Initialize Firebase - this will work even if Firebase is not available (offline mode)
+   const fbInitResult = await firebaseInit();
+   
+   // Set initial Firebase status on login page
+   updateFirebaseStatus(fbReady);
+   
+   // Load session
+   session = loadSession();
+   
+   if(session) {
+     // Restore session data
+     if(session.memberRecordId && !session.memberRecord) {
+       session.memberRecord = await one("members", session.memberRecordId);
+     }
+     
+     // Render the app
      renderApp();
-     if(fbReady)startCloudAfterLogin(session.role);
-   }else renderLogin();
-   window.addEventListener("online",async()=>{
-     online=true;updateFirebaseStatus(fbReady);toast("Online / Firebase sync starting");
-     try{await migrateLocalToFirebase();await fbStartRealtime();await syncQueue();await refreshCurrentView();startFirebaseReconcileTimer()}catch(e){console.warn("online sync",e)}
+     
+     // Start cloud sync if Firebase is ready
+     if(fbReady) {
+       startCloudAfterLogin(session.role);
+     } else {
+       // Firebase not ready, but we can still use the app in offline mode
+       console.log("Firebase not ready, running in offline mode");
+       updateFirebaseStatus(false);
+     }
+   } else {
+     // No session, show login page
+     renderLogin();
+   }
+   
+   // Additional connection monitoring for login page
+   if(!session) {
+     const statusUpdateInterval = setInterval(() => {
+       updateFirebaseStatus(fbReady);
+     }, 1000);
+     
+     window.addEventListener("loginSuccess", () => {
+       clearInterval(statusUpdateInterval);
+     });
+   }
+   
+   // Handle online/offline events
+   window.addEventListener("online", async () => {
+     online = true;
+     updateFirebaseStatus(fbReady);
+     toast("Online / Firebase sync starting");
+     try {
+       await migrateLocalToFirebase();
+       await fbStartRealtime();
+       await syncQueue();
+       await refreshCurrentView();
+       startFirebaseReconcileTimer();
+     } catch(e) {
+       console.warn("Online sync error:", e);
+     }
    });
-   window.addEventListener("offline",()=>{online=false;updateFirebaseStatus(false);toast("Offline / Local mode")});
- }catch(e){
-   console.error("Application initialization",e);
-   try{renderLogin()}catch(_e){}
+   
+   window.addEventListener("offline", () => {
+     online = false;
+     updateFirebaseStatus(false);
+     toast("Offline / Local mode");
+   });
+   
+ } catch(e) {
+   console.error("Application initialization error:", e);
+   try {
+     renderLogin();
+   } catch(_e) {
+     // Last resort: show a simple error message
+     document.body.innerHTML = `<div class="login"><div class="login-card"><div class="brand">ধ্রুব সংসদ</div><div class="notice" style="color:#d86d6d">Initialization error: ${e.message}</div></div></div>`;
+   }
  }
 }
 init();
