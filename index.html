@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Marketing Report">
+    <link rel="manifest" href="marketing-report.webmanifest">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <title>Branch Marketing Update</title>
+    <style>
+        :root {
+            --primary-color: #1565d8;
+            --primary-dark: #0e4fae;
+            --whatsapp-color: #18a957;
+            --bg-color: #f3f7fc;
+            --card-bg: #ffffff;
+            --text-color: #172b4d;
+            --muted: #6b7a90;
+            --border-color: #dce5f0;
+            --soft-blue: #eef5ff;
+            --input-bg: #fbfdff;
+            --shadow: 0 20px 55px rgba(28, 69, 125, .12);
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            font-family: "Segoe UI", "Noto Sans Bengali", Tahoma, Arial, sans-serif;
+            background: radial-gradient(circle at 3% 0%, #dcecff 0, transparent 32rem), var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            min-height: 100vh;
+            padding: 28px 16px 44px;
+        }
+        .container {
+            width: 100%; max-width: 760px; margin: 0 auto; background: var(--card-bg);
+            padding: 26px; border: 1px solid rgba(220,229,240,.9); border-radius: 22px;
+            box-shadow: var(--shadow);
+        }
+        .top-bar {
+            display:flex; align-items:center; justify-content:space-between; gap:14px;
+            margin:-26px -26px 26px; padding:20px 26px; border-radius:22px 22px 0 0;
+            color:#fff; background:linear-gradient(125deg,#0b459d,#176ada 64%,#2c85ed);
+            position:sticky; top:0; z-index:100; overflow:hidden;
+            box-shadow:0 8px 18px rgba(16,71,148,.2);
+        }
+        .top-bar::after { content:""; position:absolute; width:170px; height:170px; border-radius:50%; background:rgba(255,255,255,.11); right:-58px; top:-82px; }
+        .header-title { position:relative; z-index:1; min-width:0; }
+        .bank-name { font-size:11px; font-weight:800; letter-spacing:1px; opacity:.9; }
+        .branch-name { margin-top:4px; font-size:15px; font-weight:800; letter-spacing:.45px; }
+        h2 { margin:4px 0 0; font-size:12px; letter-spacing:.55px; font-weight:700; color:#dcecff; }
+        .header-actions { display:flex; align-items:center; gap:7px; position:relative; z-index:1; }
+        .theme-btn { flex:0 0 auto; width:auto; padding:9px 12px; background:rgba(255,255,255,.16); color:#fff; border:1px solid rgba(255,255,255,.3); font-size:12px; box-shadow:none; position:relative; z-index:1; }
+        .theme-icon-btn { width:42px; min-height:42px; padding:6px; font-size:20px; line-height:1; }
+        .install-btn { background:#fff; color:#0e4fae; border-color:#fff; }
+        .theme-btn:hover { background:rgba(255,255,255,.27); transform:none; }
+
+        .section-title {
+            display:flex; align-items:center; gap:8px; font-size:12px; letter-spacing:.85px; font-weight:800;
+            color:var(--primary-dark); background:var(--soft-blue); padding:10px 13px; margin:27px 0 15px;
+            border-left:0; border-radius:10px; text-transform:uppercase;
+        }
+        .section-title::before { content:""; display:block; width:7px; height:7px; border-radius:50%; background:var(--primary-color); box-shadow:0 0 0 4px rgba(21,101,216,.13); }
+        .form-group { margin-bottom:14px; }
+        label { display:block; font-size:12px; font-weight:700; margin:0 0 6px 2px; color:var(--muted); letter-spacing:.1px; }
+        input, select, textarea {
+            width:100%; min-height:43px; padding:10px 12px; border:1px solid var(--border-color);
+            border-radius:10px; font-size:14px; box-sizing:border-box; font-family:inherit;
+            color:var(--text-color); background:var(--input-bg); transition:border-color .18s, box-shadow .18s, background .18s;
+        }
+        textarea { min-height:76px; resize:vertical; }
+        input:hover, select:hover, textarea:hover { border-color:#b9cce5; }
+        input:focus, select:focus, textarea:focus { border-color:var(--primary-color); outline:none; background:#fff; box-shadow:0 0 0 3px rgba(21,101,216,.12); }
+        .row-group { display:flex; gap:10px; }
+        .row-group input { flex:1; min-width:0; }
+        .readonly-input { background:#edf2f8; font-weight:700; color:#52657e; border-color:#e0e8f1; }
+        .preview-box {
+            background:linear-gradient(180deg, #f9fbfe, #f3f7fb); border:1px solid var(--border-color);
+            border-left:4px solid var(--primary-color); padding:15px; border-radius:10px; font-family:ui-monospace, SFMono-Regular, Consolas, monospace;
+            white-space:pre-wrap; font-size:12px; line-height:1.6; color:#27364d; margin-top:4px; max-height:260px; overflow-y:auto;
+        }
+        .btn-container { margin-top:18px; display:flex; gap:10px; }
+        button { flex:1; border:none; min-height:44px; background:var(--whatsapp-color); color:#fff; padding:11px 13px; font:700 14px inherit; border-radius:10px; cursor:pointer; box-shadow:0 6px 14px rgba(24,169,87,.2); transition:transform .17s, box-shadow .17s, filter .17s; }
+        button:hover { transform:translateY(-1px); filter:brightness(1.03); box-shadow:0 9px 18px rgba(24,169,87,.25); }
+        button:active { transform:translateY(0); opacity:.92; }
+        .copy-btn { background:#1565d8; box-shadow:0 6px 14px rgba(21,101,216,.2); }
+        .email-btn { background:#7650c8; box-shadow:0 6px 14px rgba(118,80,200,.2); }
+        .next-btn { background:#0d8f70; box-shadow:0 6px 14px rgba(13,143,112,.2); }
+        .add-officer-btn { background:#0d8f70; margin-top:5px; box-shadow:none; max-width:230px; }
+        .officer-row { display:grid; grid-template-columns:1fr 1fr 42px; gap:8px; margin-bottom:9px; align-items:center; }
+        .officer-row button { width:42px; min-height:43px; padding:8px; background:#df4a5b; box-shadow:none; font-size:19px; line-height:1; }
+
+        /* AMOLED dark theme — true black surfaces reduce power use on OLED displays */
+        body.dark-theme { --bg-color:#000; --card-bg:#000; --text-color:#f5f5f5; --muted:#b7b7b7; --border-color:#303030; --soft-blue:#101010; --input-bg:#080808; --shadow:none; background:#000; }
+        body.dark-theme .container { border-color:#242424; box-shadow:none; }
+        body.dark-theme .top-bar { background:linear-gradient(125deg,#000,#071b3d 70%,#0b3474); border-bottom:1px solid #1c355a; }
+        body.dark-theme .section-title { color:#9fc5ff; background:#0c0c0c; }
+        body.dark-theme .section-title::before { box-shadow:0 0 0 4px rgba(65,142,255,.14); }
+        body.dark-theme input, body.dark-theme select, body.dark-theme textarea { background:#080808; color:#f5f5f5; border-color:#303030; }
+        body.dark-theme input::placeholder, body.dark-theme textarea::placeholder { color:#767676; }
+        body.dark-theme .readonly-input { background:#111; color:#e0e0e0; border-color:#303030; }
+        body.dark-theme .preview-box { background:#070707; border-color:#353535; color:#ededed; }
+        body.dark-theme input:focus, body.dark-theme select:focus, body.dark-theme textarea:focus { background:#0b0b0b; border-color:#498eff; box-shadow:0 0 0 3px rgba(73,142,255,.2); }
+        body.dark-theme .theme-btn { background:rgba(255,255,255,.1); color:#fff; border-color:rgba(255,255,255,.22); }
+
+        @media (max-width: 560px) {
+            body { padding:10px 8px 26px; }
+            .container { padding:17px 14px; border-radius:16px; }
+            .top-bar { margin:-17px -14px 20px; padding:18px 15px; border-radius:16px 16px 0 0; }
+            .top-bar { padding:15px 14px; }
+            .bank-name { font-size:9px; letter-spacing:.55px; }
+            .branch-name { font-size:13px; }
+            h2 { font-size:10px; letter-spacing:.25px; }
+            .theme-btn { padding:8px 9px; font-size:11px; }
+            .theme-icon-btn { width:38px; min-height:38px; padding:5px; font-size:18px; }
+            .section-title { margin-top:21px; padding:9px 10px; }
+            input, select, textarea { font-size:16px; }
+            .row-group { gap:7px; }
+            .btn-container { gap:7px; flex-wrap:wrap; }
+            .btn-container button { min-width:calc(50% - 4px); }
+            .btn-container:first-of-type button { min-width:100%; }
+            .officer-row { grid-template-columns:1fr; }
+            .officer-row button { width:100%; }
+            .add-officer-btn { max-width:none; }
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header class="top-bar">
+        <div class="header-title">
+            <div class="bank-name">FIRST SECURITY ISLAMI BANK PLC</div>
+            <div class="branch-name">TANTAR BRANCH</div>
+            <h2>DAILY BRANCH MARKETING REPORT</h2>
+        </div>
+        <div class="header-actions">
+            <button type="button" id="installAppBtn" class="theme-btn install-btn" onclick="installApp()" hidden>Install App</button>
+            <button type="button" id="themeToggle" class="theme-btn theme-icon-btn" onclick="toggleTheme()" aria-label="Enable dark theme" title="Enable dark theme">☀️</button>
+        </div>
+    </header>
+
+    <form id="reportForm">
+        <!-- GENERAL INFO -->
+        <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="reportDate" required oninput="generatePreview()">
+        </div>
+        <div class="form-group">
+            <label>Branch</label>
+            <input type="text" value="Tantar Branch" class="readonly-input" readonly>
+        </div>
+        <div class="form-group">
+            <label>Zone</label>
+            <input type="text" value="Cumilla" class="readonly-input" readonly>
+        </div>
+
+        <!-- TODAY'S DEPOSIT -->
+        <div class="section-title">TODAY'S DEPOSIT</div>
+        <div class="form-group">
+            <label>Cash Deposit (৳)</label>
+            <input type="text" inputmode="decimal" id="cashDeposit" placeholder="Amount" oninput="calculateDeposits()">
+        </div>
+        <div class="form-group">
+            <label>Clearing / BFTN (৳)</label>
+            <input type="text" inputmode="decimal" id="clearingDeposit" placeholder="Amount" oninput="calculateDeposits()">
+        </div>
+        <div class="form-group">
+            <label>RTGS (৳)</label>
+            <input type="text" inputmode="decimal" id="rtgsDeposit" placeholder="Amount" oninput="calculateDeposits()">
+        </div>
+        <div class="form-group">
+            <label>NPSB (৳)</label>
+            <input type="text" inputmode="decimal" id="npsbDeposit" placeholder="Amount" oninput="calculateDeposits()">
+        </div>
+        <div class="form-group">
+            <label>Agent Outlet Deposit (৳)</label>
+            <input type="text" inputmode="decimal" id="agentDeposit" placeholder="Amount" oninput="calculateDeposits()">
+        </div>
+        <div class="form-group">
+            <label>Total Deposit (৳)</label>
+            <input type="text" id="totalDeposit" class="readonly-input" value="N/A" readonly>
+        </div>
+
+        <!-- NEW ACCOUNTS & DEPOSIT -->
+        <div class="section-title">NEW ACCOUNTS & DEPOSIT</div>
+        
+        <div class="form-group">
+            <label>Savings Account</label>
+            <div class="row-group">
+                <input type="text" inputmode="decimal" id="savAcc" placeholder="Number" oninput="calculateNewAccounts()">
+                <input type="text" inputmode="decimal" id="savAmt" placeholder="Amount (৳)" oninput="calculateNewAccounts()">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Current Account</label>
+            <div class="row-group">
+                <input type="text" inputmode="decimal" id="curAcc" placeholder="Number" oninput="calculateNewAccounts()">
+                <input type="text" inputmode="decimal" id="curAmt" placeholder="Amount (৳)" oninput="calculateNewAccounts()">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>MTDR Account</label>
+            <div class="row-group">
+                <input type="text" inputmode="decimal" id="mtdrAcc" placeholder="Number" oninput="calculateNewAccounts()">
+                <input type="text" inputmode="decimal" id="mtdrAmt" placeholder="Amount (৳)" oninput="calculateNewAccounts()">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>DPS</label>
+            <div class="row-group">
+                <input type="text" inputmode="decimal" id="othAcc" placeholder="Number" oninput="calculateNewAccounts()">
+                <input type="text" inputmode="decimal" id="othAmt" placeholder="Amount (৳)" oninput="calculateNewAccounts()">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Total New Accounts</label>
+            <input type="text" id="totalNewAcc" class="readonly-input" value="N/A" readonly>
+        </div>
+        <div class="form-group">
+            <label>Total Deposit from New A/C (৳)</label>
+            <input type="text" id="totalNewAmt" class="readonly-input" value="N/A" readonly>
+        </div>
+
+        <!-- TODAY'S MARKETING ACTIVITIES & VISIT INFORMATION -->
+        <div class="section-title">TODAY'S MARKETING ACTIVITIES</div>
+        
+        <div class="form-group">
+            <label>Officer Name</label>
+            <select id="visitingOfficer" onchange="updateDesignation(); generatePreview();">
+                <option value="">Select Officer Name</option>
+                <option value="Harun Or Rashid">Harun Or Rashid</option>
+                <option value="Mohammad Showkat Hossain">Mohammad Showkat Hossain</option>
+                <option value="Md. Mazharul Islam">Md. Mazharul Islam</option>
+                <option value="Md. Fazlul Karim">Md. Fazlul Karim</option>
+                <option value="Mohammed Mominul Hoque">Mohammed Mominul Hoque</option>
+                <option value="Kamruzzaman Shakil">Kamruzzaman Shakil</option>
+                <option value="Mohammad Mijanur Rahman">Mohammad Mijanur Rahman</option>
+                <option value="Al-Amin Hafiz Ibne Akhter">Al-Amin Hafiz Ibne Akhter</option>
+                <option value="Md. Jashim Uddin">Md. Jashim Uddin</option>
+                <option value="Md. Hanifur Alam">Md. Hanifur Alam</option>
+                <option value="Rafiq Uddin">Rafiq Uddin</option>
+                <option value="Md. Arafat">Md. Arafat</option>
+                <option value="Md. Humyon Rashid">Md. Humyon Rashid</option>
+                <option value="Shah Alam">Shah Alam</option>
+                <option value="Jahirul Islam">Jahirul Islam</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Designation</label>
+            <input type="text" id="visitingDesignation" class="readonly-input" placeholder="Designation will auto-select" readonly>
+        </div>
+        <div class="form-group">
+            <label>Visit Type</label>
+            <select id="visitType" onchange="toggleOrgType(); generatePreview();">
+                <option value="">Select Visit Type</option>
+                <option value="Marketing">Marketing</option>
+                <option value="Customer Visit">Customer Visit</option>
+                <option value="Organization">Organization</option>
+            </select>
+        </div>
+        <div class="form-group" id="orgTypeGroup" style="display: none;">
+            <label>Organization Type</label>
+            <select id="orgType" onchange="generatePreview()">
+                <option value="">Select Organization Type</option>
+                <option value="School">School</option>
+                <option value="College">College</option>
+                <option value="Mosque">Mosque</option>
+                <option value="Madrasa">Madrasa</option>
+                <option value="NGO">NGO</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Organization / Customer Name</label>
+            <input type="text" id="orgCustomerName" placeholder="Enter name" oninput="generatePreview()">
+        </div>
+        <div class="form-group">
+            <label>Visit Location</label>
+            <input type="text" id="visitingAddress" placeholder="Enter visit location" oninput="generatePreview()">
+        </div>
+        <div class="form-group">
+            <label>Additional Visiting Officers</label>
+            <div id="additionalOfficers"></div>
+            <button type="button" class="add-officer-btn" onclick="addOfficer()">+ Add Another Officer</button>
+        </div>
+        <div class="form-group">
+            <label>Remarks</label>
+            <textarea id="visitRemarks" placeholder="Enter remarks" rows="2" oninput="generatePreview()"></textarea>
+        </div>
+
+        <!-- LIVE PREVIEW SECTION -->
+        <div class="section-title">MESSAGE PREVIEW</div>
+        <div id="previewBox" class="preview-box"></div>
+
+        <!-- NEXT / ACTION BUTTONS -->
+        <div class="btn-container">
+            <button type="button" class="next-btn" onclick="goNext()">Next →</button>
+        </div>
+
+        <!-- BUTTONS -->
+        <div class="btn-container">
+            <button type="button" class="copy-btn" onclick="copyMessage()">Copy Message</button>
+            <button type="button" onclick="sendToWhatsApp()">Send WhatsApp</button>
+            <button type="button" class="email-btn" onclick="sendByEmail()">Send Email</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.getElementById('reportDate').valueAsDate = new Date();
+
+    // Officer Designation Mapping
+    const officerDesignations = {
+        "Harun Or Rashid": "Assistant Vice President",
+        "Mohammad Showkat Hossain": "Principle Officer",
+        "Md. Mazharul Islam": "Principle Officer (Cash)",
+        "Md. Fazlul Karim": "Senior Officer",
+        "Mohammed Mominul Hoque": "Officer",
+        "Kamruzzaman Shakil": "Officer (Cash)",
+        "Mohammad Mijanur Rahman": "Junior Officer",
+        "Al-Amin Hafiz Ibne Akhter": "Junior Officer (Cash)",
+        "Md. Jashim Uddin": "Junior Officer",
+        "Md. Hanifur Alam": "Junior Officer",
+        "Rafiq Uddin": "Junior Officer (Cash)",
+        "Md. Arafat": "Assistant Officer (Cash)",
+        "Md. Humyon Rashid": "Assistant Officer",
+        "Shah Alam": "Assistant Officer",
+        "Jahirul Islam": "Assistant Officer (Cash)"
+    };
+
+
+    // বাংলা/আরবি সংখ্যা → ইংরেজি সংখ্যা
+    function normalizeDigits(value) {
+        if (value == null) return "";
+        const map = {
+            '০':'0','১':'1','২':'2','৩':'3','৪':'4','৫':'5','৬':'6','৭':'7','৮':'8','৯':'9',
+            '٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9'
+        };
+        return String(value).replace(/[০-৯٠-٩]/g, d => map[d] || d);
+    }
+
+    function normalizeNumberInputs() {
+        document.querySelectorAll('input').forEach(input => {
+            if (input.type === 'number' || input.inputMode === 'numeric' || input.inputMode === 'decimal') {
+                input.value = normalizeDigits(input.value);
+            }
+        });
+    }
+
+    // যে কোনো number input-এ বাংলা সংখ্যা লিখলেও সাথে সাথে ইংরেজিতে রূপান্তর হবে
+    document.addEventListener('input', function(e) {
+        const el = e.target;
+        if (el && el.tagName === 'INPUT' &&
+            (el.type === 'number' || el.inputMode === 'numeric' || el.inputMode === 'decimal')) {
+            const normalized = normalizeDigits(el.value);
+            if (el.value !== normalized) {
+                el.value = normalized;
+            }
+        }
+    });
+
+    // ফর্মের বর্তমান ডাটা রেখে পরের খালি ইনপুটে ফোকাস
+    function goNext() {
+        normalizeNumberInputs();
+        const fields = Array.from(document.querySelectorAll(
+            '#reportForm input:not([readonly]), #reportForm select, #reportForm textarea'
+        )).filter(el => el.offsetParent !== null && !el.disabled);
+
+        const current = document.activeElement;
+        let index = fields.indexOf(current);
+        let next = null;
+
+        // বর্তমানের পরের খালি field খুঁজবে; না পেলে পরের field
+        for (let i = index + 1; i < fields.length; i++) {
+            if (!fields[i].value.trim()) {
+                next = fields[i];
+                break;
+            }
+        }
+        if (!next && index >= 0 && index + 1 < fields.length) next = fields[index + 1];
+        if (!next) next = fields.find(el => !el.value.trim());
+
+        if (next) {
+            next.focus();
+            if (next.select && next.tagName === 'INPUT') next.select();
+            next.scrollIntoView({behavior: 'smooth', block: 'center'});
+        } else {
+            document.getElementById('previewBox').scrollIntoView({behavior:'smooth', block:'center'});
+        }
+    }
+
+    // Enter চাপলে Next-এর মতো পরের ইনপুটে যাবে
+    document.addEventListener('keydown', function(e) {
+        if (e.key !== 'Enter') return;
+        const el = e.target;
+        if (!el || !['INPUT','SELECT','TEXTAREA'].includes(el.tagName)) return;
+        if (el.tagName === 'TEXTAREA') return;
+        e.preventDefault();
+        goNext();
+    });
+
+    function updateDesignation() {
+        let selectedOfficer = document.getElementById('visitingOfficer').value;
+        let designationField = document.getElementById('visitingDesignation');
+        if (selectedOfficer && officerDesignations[selectedOfficer]) {
+            designationField.value = officerDesignations[selectedOfficer];
+        } else {
+            designationField.value = "";
+        }
+    }
+
+    function formatDate(dateString) {
+        if (!dateString) return "";
+        let dateObj = new Date(dateString);
+        let day = dateObj.getDate();
+        let months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        let monthName = months[dateObj.getMonth()];
+        let year = dateObj.getFullYear();
+        return `${day} ${monthName} ${year}`;
+    }
+
+    function getVal(id) {
+        let val = normalizeDigits(document.getElementById(id).value).replace(/,/g, "");
+        return val === "" ? 0 : (parseFloat(val) || 0);
+    }
+
+    function formatAmount(id) {
+        let val = document.getElementById(id).value;
+        return val === "" ? "" : parseFloat(val).toLocaleString('en-IN');
+    }
+
+    function toggleOrgType() {
+        let visitType = document.getElementById('visitType').value;
+        let orgTypeGroup = document.getElementById('orgTypeGroup');
+        if (visitType === "Organization") {
+            orgTypeGroup.style.display = "block";
+        } else {
+            orgTypeGroup.style.display = "none";
+            document.getElementById('orgType').value = "";
+        }
+    }
+
+    function calculateDeposits() {
+        let cash = document.getElementById('cashDeposit').value;
+        let clearing = document.getElementById('clearingDeposit').value;
+        let rtgs = document.getElementById('rtgsDeposit').value;
+        let npsb = document.getElementById('npsbDeposit').value;
+        let agent = document.getElementById('agentDeposit').value;
+
+        let hasAnyInput = cash !== "" || clearing !== "" || rtgs !== "" || npsb !== "" || agent !== "";
+
+        if (!hasAnyInput) {
+            document.getElementById('totalDeposit').value = "N/A";
+        } else {
+            let total = getVal('cashDeposit') + getVal('clearingDeposit') + getVal('rtgsDeposit') + getVal('npsbDeposit') + getVal('agentDeposit');
+            document.getElementById('totalDeposit').value = total.toLocaleString('en-IN');
+        }
+        generatePreview();
+    }
+
+    function calculateNewAccounts() {
+        let savAcc = document.getElementById('savAcc').value;
+        let curAcc = document.getElementById('curAcc').value;
+        let mtdrAcc = document.getElementById('mtdrAcc').value;
+        let othAcc = document.getElementById('othAcc').value;
+
+        let savAmt = document.getElementById('savAmt').value;
+        let curAmt = document.getElementById('curAmt').value;
+        let mtdrAmt = document.getElementById('mtdrAmt').value;
+        let othAmt = document.getElementById('othAmt').value;
+
+        let hasAccInput = savAcc !== "" || curAcc !== "" || mtdrAcc !== "" || othAcc !== "";
+        let hasAmtInput = savAmt !== "" || curAmt !== "" || mtdrAmt !== "" || othAmt !== "";
+
+        if (!hasAccInput) {
+            document.getElementById('totalNewAcc').value = "N/A";
+        } else {
+            let totalAcc = getVal('savAcc') + getVal('curAcc') + getVal('mtdrAcc') + getVal('othAcc');
+            document.getElementById('totalNewAcc').value = totalAcc;
+        }
+
+        if (!hasAmtInput) {
+            document.getElementById('totalNewAmt').value = "N/A";
+        } else {
+            let totalAmt = getVal('savAmt') + getVal('curAmt') + getVal('mtdrAmt') + getVal('othAmt');
+            document.getElementById('totalNewAmt').value = totalAmt.toLocaleString('en-IN');
+        }
+        generatePreview();
+    }
+
+    function buildMessageText() {
+        let rawDate = document.getElementById('reportDate').value;
+        let formattedDate = formatDate(rawDate);
+        
+        let cash = formatAmount('cashDeposit');
+        let clearing = formatAmount('clearingDeposit');
+        let rtgs = formatAmount('rtgsDeposit');
+        let npsb = formatAmount('npsbDeposit');
+        let agent = formatAmount('agentDeposit');
+        let totalDep = document.getElementById('totalDeposit').value;
+
+        let depositLines = [];
+        if (document.getElementById('cashDeposit').value !== "") {
+            depositLines.push(`Cash Deposit : ৳ ${cash}`);
+        }
+        if (document.getElementById('clearingDeposit').value !== "") {
+            depositLines.push(`Clearing / BFTN : ৳ ${clearing}`);
+        }
+        if (document.getElementById('rtgsDeposit').value !== "") {
+            depositLines.push(`RTGS : ৳ ${rtgs}`);
+        }
+        if (document.getElementById('npsbDeposit').value !== "") {
+            depositLines.push(`NPSB : ৳ ${npsb}`);
+        }
+        if (document.getElementById('agentDeposit').value !== "") {
+            depositLines.push(`Agent Outlet Deposit : ৳ ${agent}`);
+        }
+
+        let savAcc = document.getElementById('savAcc').value;
+        let savAmt = formatAmount('savAmt');
+        let curAcc = document.getElementById('curAcc').value;
+        let curAmt = formatAmount('curAmt');
+        let mtdrAcc = document.getElementById('mtdrAcc').value;
+        let mtdrAmt = formatAmount('mtdrAmt');
+        let othAcc = document.getElementById('othAcc').value;
+        let othAmt = formatAmount('othAmt');
+
+        let totNewAcc = document.getElementById('totalNewAcc').value;
+        let totNewAmt = document.getElementById('totalNewAmt').value;
+
+        let accountLines = [];
+        if (savAcc !== "" || savAmt !== "") {
+            let accText = savAcc !== "" ? savAcc : '0';
+            let amtText = savAmt !== "" ? `৳ ${savAmt}` : '৳ 0';
+            accountLines.push(`Savings Account : ${accText}\nDeposit : ${amtText}`);
+        }
+        if (curAcc !== "" || curAmt !== "") {
+            let accText = curAcc !== "" ? curAcc : '0';
+            let amtText = curAmt !== "" ? `৳ ${curAmt}` : '৳ 0';
+            accountLines.push(`Current Account : ${accText}\nDeposit : ${amtText}`);
+        }
+        if (mtdrAcc !== "" || mtdrAmt !== "") {
+            let accText = mtdrAcc !== "" ? mtdrAcc : '0';
+            let amtText = mtdrAmt !== "" ? `৳ ${mtdrAmt}` : '৳ 0';
+            accountLines.push(`MTDR Account : ${accText}\nDeposit : ${amtText}`);
+        }
+        if (othAcc !== "" || othAmt !== "") {
+            let accText = othAcc !== "" ? othAcc : '0';
+            let amtText = othAmt !== "" ? `৳ ${othAmt}` : '৳ 0';
+            accountLines.push(`DPS : ${accText}\nDeposit : ${amtText}`);
+        }
+
+        let visitingOfficer = document.getElementById('visitingOfficer').value.trim();
+        let visitingDesignation = document.getElementById('visitingDesignation').value.trim();
+        let visitType = document.getElementById('visitType').value;
+        let orgType = document.getElementById('orgType').value;
+        let orgCustomerName = document.getElementById('orgCustomerName').value.trim();
+        let visitingAddress = document.getElementById('visitingAddress').value.trim();
+        let visitRemarks = document.getElementById('visitRemarks').value.trim();
+
+        let marketingLines = [];
+        if (visitingOfficer !== "") {
+            marketingLines.push(`Officer Name : ${visitingOfficer}`);
+        }
+        if (visitingDesignation !== "") {
+            marketingLines.push(`Designation : ${visitingDesignation}`);
+        }
+
+        getAdditionalOfficers().forEach((officer, index) => {
+            marketingLines.push(`Officer ${index + 2} : ${officer.name}${officer.designation ? ` (${officer.designation})` : ''}`);
+        })
+        if (visitType !== "") {
+            marketingLines.push(`Visit Type : ${visitType}`);
+        }
+        if (visitType === "Organization" && orgType !== "") {
+            marketingLines.push(`Organization Type : ${orgType}`);
+        }
+        if (orgCustomerName !== "") {
+            marketingLines.push(`Organization/Customer Name : ${orgCustomerName}`);
+        }
+        if (visitingAddress !== "") {
+            marketingLines.push(`Visit Location : ${visitingAddress}`);
+        }
+        if (visitRemarks !== "") {
+            marketingLines.push(`Remarks : ${visitRemarks}`);
+        }
+
+        let message = `*DAILY BRANCH MARKETING UPDATE*\n\n` +
+                      `Date: ${formattedDate}\n` +
+                      `Branch Name: _*Tantar Branch*_\n` +
+                      `Zone: Cumilla\n\n`;
+        
+        if (depositLines.length > 0) {
+            message += `*TODAY'S DEPOSIT*\n\n` + depositLines.join('\n') + `\n\nTotal Deposit : ৳ ${totalDep}\n\n`;
+        }
+
+        if (accountLines.length > 0 || totNewAcc !== "N/A") {
+            message += `*NEW ACCOUNTS & DEPOSIT*\n\n`;
+            if (accountLines.length > 0) {
+                message += accountLines.join('\n\n') + `\n\n`;
+            }
+            message += `Total new accounts : ${totNewAcc}\nTotal Deposit From New Account : ৳ ${totNewAmt}\n\n`;
+        }
+
+        if (marketingLines.length > 0) {
+            message += `*TODAY'S MARKETING ACTIVITIES*\n\n` + marketingLines.join('\n') + `\n\n`;
+        }
+
+        message += `Branch Name: _*Tantar Branch*_\nZone: Cumilla`;
+
+        return message.trim();
+    }
+
+    function generatePreview() {
+        document.getElementById('previewBox').innerText = buildMessageText();
+    }
+
+    function copyMessage() {
+        let textToCopy = buildMessageText();
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            alert("Message copied to clipboard successfully!");
+        }).catch(err => {
+            alert("Failed to copy text.");
+        });
+    }
+
+    function sendToWhatsApp() {
+        let finalMessage = buildMessageText();
+        let encodedMessage = encodeURIComponent(finalMessage);
+        let whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMessage}`;
+        window.open(whatsappUrl, '_blank');
+    }
+
+
+
+    let additionalOfficerCount = 0;
+
+    function officerOptions() {
+        return Object.keys(officerDesignations)
+            .map(name => `<option value="${name}">${name}</option>`)
+            .join('');
+    }
+
+    function addOfficer() {
+        additionalOfficerCount++;
+        const row = document.createElement('div');
+        row.className = 'officer-row';
+        row.id = `additionalOfficerRow${additionalOfficerCount}`;
+        row.innerHTML = `
+            <select class="additional-officer-name" onchange="generatePreview()">
+                <option value="">Select Officer Name</option>
+                ${officerOptions()}
+            </select>
+            <input type="text" class="additional-officer-designation readonly-input"
+                   placeholder="Designation" readonly>
+            <button type="button" onclick="removeOfficer('${row.id}')">×</button>
+        `;
+        document.getElementById('additionalOfficers').appendChild(row);
+
+        const select = row.querySelector('.additional-officer-name');
+        select.addEventListener('change', function() {
+            row.querySelector('.additional-officer-designation').value =
+                officerDesignations[this.value] || '';
+            generatePreview();
+        });
+
+        select.focus();
+    }
+
+    function removeOfficer(rowId) {
+        const row = document.getElementById(rowId);
+        if (row) row.remove();
+        generatePreview();
+    }
+
+    function getAdditionalOfficers() {
+        return Array.from(document.querySelectorAll('.officer-row')).map(row => {
+            const name = row.querySelector('.additional-officer-name')?.value.trim() || '';
+            const designation = row.querySelector('.additional-officer-designation')?.value.trim() || '';
+            return { name, designation };
+        }).filter(o => o.name);
+    }
+
+    function sendByEmail() {
+        const rawDate = document.getElementById('reportDate').value;
+        const formattedDate = formatDate(rawDate);
+
+        const cash = formatAmount('cashDeposit');
+        const clearing = formatAmount('clearingDeposit');
+        const rtgs = formatAmount('rtgsDeposit');
+        const npsb = formatAmount('npsbDeposit');
+        const agent = formatAmount('agentDeposit');
+        const totalDep = document.getElementById('totalDeposit').value;
+
+        const savAcc = document.getElementById('savAcc').value || '0';
+        const savAmt = formatAmount('savAmt') || '0';
+        const curAcc = document.getElementById('curAcc').value || '0';
+        const curAmt = formatAmount('curAmt') || '0';
+        const mtdrAcc = document.getElementById('mtdrAcc').value || '0';
+        const mtdrAmt = formatAmount('mtdrAmt') || '0';
+        const othAcc = document.getElementById('othAcc').value || '0';
+        const othAmt = formatAmount('othAmt') || '0';
+        const totNewAcc = document.getElementById('totalNewAcc').value === 'N/A' ? '0' : document.getElementById('totalNewAcc').value;
+        const totNewAmt = document.getElementById('totalNewAmt').value === 'N/A' ? '0' : document.getElementById('totalNewAmt').value;
+
+        const officer = document.getElementById('visitingOfficer').value.trim();
+        const designation = document.getElementById('visitingDesignation').value.trim();
+        const visitType = document.getElementById('visitType').value;
+        const orgType = document.getElementById('orgType').value;
+        const location = document.getElementById('visitingAddress').value.trim();
+        const customer = document.getElementById('orgCustomerName').value.trim();
+
+        let subject = `Daily Branch Marketing & Performance Summary – Tantar Branch (${formattedDate})`;
+
+        let body = `Assalamu Alaikum wa Rahmatullah,
+
+Please find below the detailed daily performance and marketing summary for Tantar Branch (Cumilla Zone) for ${formattedDate}:
+
+1. Deposit Overview:
+• Cash Deposit : ৳ ${cash || '0'}
+• Clearing / BFTN : ৳ ${clearing || '0'}
+• RTGS : ৳ ${rtgs || '0'}
+• NPSB : ৳ ${npsb || '0'}
+• Agent Outlet Deposit : ৳ ${agent || '0'}
+• Total Deposit : ৳ ${totalDep === 'N/A' ? '0' : totalDep}
+
+2. Account Opening & Collection:
+• Savings Account : ${savAcc} (Initial Deposit: ৳ ${savAmt})
+• Current Account : ${curAcc} (Initial Deposit: ৳ ${curAmt})
+• MTDR Account : ${mtdrAcc} (Initial Deposit: ৳ ${mtdrAmt})
+• DPS : ${othAcc} (Initial Deposit: ৳ ${othAmt})
+• Total New Accounts : ${totNewAcc}
+• Total Deposit (New Accounts) : ৳ ${totNewAmt}
+
+3. Field Marketing & Visit:`;
+
+        if (officer) body += `\n• Key Personnel : ${officer}${designation ? ` (${designation})` : ''}`;
+
+        const additionalOfficers = getAdditionalOfficers();
+        additionalOfficers.forEach((o, index) => {
+            body += `\n• Additional Officer ${index + 1} : ${o.name}${o.designation ? ` (${o.designation})` : ''}`;
+        });
+
+        if (visitType) body += `\n• Visit Type : ${visitType}`;
+        if (visitType === 'Organization' && orgType) body += `\n• Organization Type : ${orgType}`;
+        if (customer) body += `\n• Organization / Customer : ${customer}`;
+        if (location) body += `\n• Target Location : ${location}`;
+
+        body += `
+
+Jazakumullahu Khairan.
+
+Best regards,
+
+Tantar Branch Team
+Cumilla Zone
+First Security Islami Bank PLC`;
+
+        const mailtoUrl = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        window.location.href = mailtoUrl;
+    }
+
+
+    function updateThemeButton(dark) {
+        const btn = document.getElementById("themeToggle");
+        if (!btn) return;
+        // Light mode shows a sun; after tapping it, dark mode shows a moon.
+        btn.textContent = dark ? "🌙" : "☀️";
+        btn.setAttribute('aria-label', dark ? 'Enable light theme' : 'Enable dark theme');
+        btn.title = dark ? 'Enable light theme' : 'Enable dark theme';
+    }
+
+    function applySavedTheme() {
+        const dark = localStorage.getItem("dailyMarketingTheme") === "dark";
+        document.body.classList.toggle("dark-theme", dark);
+        updateThemeButton(dark);
+    }
+
+    function toggleTheme() {
+        const dark = !document.body.classList.contains("dark-theme");
+        document.body.classList.toggle("dark-theme", dark);
+        localStorage.setItem("dailyMarketingTheme", dark ? "dark" : "light");
+        updateThemeButton(dark);
+    }
+
+    // PWA install support for Android/desktop browsers
+    let deferredInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', function(event) {
+        event.preventDefault();
+        deferredInstallPrompt = event;
+        document.getElementById('installAppBtn').hidden = false;
+    });
+
+    window.addEventListener('appinstalled', function() {
+        deferredInstallPrompt = null;
+        document.getElementById('installAppBtn').hidden = true;
+    });
+
+    async function installApp() {
+        // Android / Chrome shows its native install dialog here.
+        if (deferredInstallPrompt) {
+            deferredInstallPrompt.prompt();
+            await deferredInstallPrompt.userChoice;
+            deferredInstallPrompt = null;
+            document.getElementById('installAppBtn').hidden = true;
+            return;
+        }
+        // iPhone/iPad Safari does not expose an install prompt API.
+        alert('iPhone/iPad: tap the Share button, then choose “Add to Home Screen”.\n\nAndroid: open the browser menu and choose “Install app” or “Add to Home screen”.');
+    }
+
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('./service-worker.js').catch(function(error) {
+                console.log('Service worker registration failed:', error);
+            });
+        });
+    }
+
+    window.onload = function() {
+        applySavedTheme();
+        normalizeNumberInputs();
+        generatePreview();
+    };
+</script>
+
+</body>
+</html>
