@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dhruvo Sangsad — Firebase Read/Write Test</title>
+<style>
+body{font-family:Arial,"Noto Sans Bengali",sans-serif;background:#f5f7f6;margin:0;padding:20px;color:#202725}
+.card{max-width:650px;margin:auto;background:#fff;border:1px solid #dce5e0;border-radius:14px;padding:20px;box-shadow:0 6px 20px #0001}
+h2{margin-top:0}.status{padding:10px;border-radius:8px;margin:10px 0;background:#eef2f0}
+button{border:0;border-radius:8px;padding:11px 15px;margin:5px;cursor:pointer;background:#5eaa7b;color:#fff}
+button.secondary{background:#fff;color:#202725;border:1px solid #ccd8d2}
+pre{background:#202725;color:#eaf7ef;padding:12px;border-radius:8px;white-space:pre-wrap;word-break:break-word}
+.ok{color:#21864b;font-weight:700}.bad{color:#c43f3f;font-weight:700}
+</style>
+</head>
+<body>
+<div class="card">
+<h2>Firebase Realtime Database Test</h2>
+<div id="status" class="status">Connecting...</div>
+
+<button id="write">Test Write</button>
+<button id="read" class="secondary">Test Read</button>
+<button id="live" class="secondary">Start Realtime Listener</button>
+
+<h3>Result</h3>
+<pre id="result">Waiting...</pre>
+</div>
+
+<!-- এখানে type="module" ব্যবহার করে মডার্ন মডুলার SDK স্ক্রিপ্ট যুক্ত করা হয়েছে -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBig1Ajmtb4wBSQI3B0Ie16DoSODeIZiDs",
+  authDomain: "dhruvo-sangsad.firebaseapp.com",
+  databaseURL: "https://dhruvo-sangsad-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "dhruvo-sangsad",
+  storageBucket: "dhruvo-sangsad.firebasestorage.app",
+  messagingSenderId: "262988571932",
+  appId: "1:262988571932:web:13be08e891d7d2a11986d9",
+  measurementId: "G-X159JBNZKQ"
+};
+
+// অ্যাপ এবং ডেটাবেস ইনিশিয়ালাইজ করুন
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const testPath = "dhruvo/firebaseTest";
+const result = document.getElementById("result");
+const status = document.getElementById("status");
+
+function show(msg, ok=true){
+  result.textContent = msg;
+  result.className = ok ? "ok" : "bad";
+}
+
+// ডেটাবেস কানেকশন স্ট্যাটাস চেক [5]
+onValue(ref(db, ".info/connected"), snap => {
+  if(snap.val() === true){
+    status.textContent = "Firebase: CONNECTED";
+    status.className = "status ok";
+  }else{
+    status.textContent = "Firebase: DISCONNECTED";
+    status.className = "status bad";
+  }
+});
+
+// ডেটা রাইট করার লজিক
+document.getElementById("write").onclick = async()=>{
+  const data = {
+    message: "Hello Firebase!",
+    test: "READ_WRITE_TEST",
+    timestamp: Date.now(),
+    date: new Date().toISOString()
+  };
+
+  try{
+    await set(ref(db, testPath), data);
+    show("WRITE SUCCESS\n\nPath: " + testPath +
+         "\n\n" + JSON.stringify(data,null,2));
+  }catch(e){
+    show("WRITE FAILED\n\n" + e.code + "\n" + e.message, false);
+  }
+};
+
+// ডেটা রিড করার লজিক [9]
+document.getElementById("read").onclick = async()=>{
+  try{
+    const snap = await get(ref(db, testPath));
+    if(snap.exists()){
+      show("READ SUCCESS\n\nPath: " + testPath +
+           "\n\n" + JSON.stringify(snap.val(),null,2));
+    }else{
+      show("READ SUCCESS, BUT NO DATA FOUND.\n\nFirst click Test Write.", false);
+    }
+  }catch(e){
+    show("READ FAILED\n\n" + e.code + "\n" + e.message, false);
+  }
+};
+
+// রিয়েলটাইম ডেটা পরিবর্তন শোনার লজিক [5]
+document.getElementById("live").onclick = ()=>{
+  onValue(ref(db, testPath), snap=>{
+    show("REALTIME UPDATE RECEIVED\n\n" +
+         JSON.stringify(snap.val(),null,2));
+  }, e=>{
+    show("REALTIME LISTENER FAILED\n\n" + e.code + "\n" + e.message,false);
+  });
+};
+</script>
+</body>
+</html>
