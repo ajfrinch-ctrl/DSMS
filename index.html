@@ -1490,55 +1490,30 @@ async function dashboard(){
 async function renderRegistration(){
   document.body.innerHTML = `<div class="login"><div class="login-card" style="max-width:720px"><div class="brand">Member Registration</div><form id="rf"><div class="form-grid">
 ${[
-["nameBn","Name (Bangla) *"],["nameEn","Name (English) *"],["memberId","Member ID / Customer ID (ঐচ্ছিক)"],["fatherBn","Father's Name (Bangla)"],["fatherEn","Father's Name (English)"],["motherBn","Mother's Name (Bangla)"],["motherEn","Mother's Name (English)"],["mobile","Mobile Number *"],["whatsapp","WhatsApp Number *"],["email","Email ID"],["nid","NID Number *"],["dob","Date of Birth (DD-MM-YYYY)"],["profession","Profession"],["address","Address"],["monthlyInstallment","Monthly Installment *"],["password","Password *"]
-].map(([i,l]) => `<div class="field"><label>${l}</label><input id="${i}" ${i === "password" ? "type=password" : ""} ${i === "memberId" ? "maxlength=30" : ""} ${i === "monthlyInstallment" ? "type=number min=0 step=0.01" : ""} ${i === "nid" ? "required" : ""}></div>`).join("")}</div><div class="actions"><button class="primary">Register</button><button type="button" class="neutral" id="back">Back to Login</button></div></form></div>${themeBtnHtml()}</div>`;
+["nameBn","Name (Bangla) *"],["nameEn","Name (English) *"],["fatherBn","Father's Name (Bangla)"],["fatherEn","Father's Name (English)"],["motherBn","Mother's Name (Bangla)"],["motherEn","Mother's Name (English)"],["mobile","Mobile Number *"],["whatsapp","WhatsApp Number *"],["email","Email ID"],["nid","NID Number"],["dob","Date of Birth (DD-MM-YYYY)"],["profession","Profession"],["address","Address"],["monthlyInstallment","Monthly Installment *"],["password","Password *"]
+].map(([i,l]) => `<div class="field"><label>${l}</label><input id="${i}" ${i === "password" ? "type=password" : ""} ${i === "monthlyInstallment" ? "type=number min=0 step=0.01" : ""} required></div>`).join("")}</div><div class="actions"><button class="primary">Register</button><button type="button" class="neutral" id="back">Back to Login</button></div></form></div>${themeBtnHtml()}</div>`;
   $("#back").onclick = renderLogin;
   wireThemeBtn();
   $("#rf").onsubmit = async e => {
     e.preventDefault();
     const g = i => $("#" + i).value.trim();
-    let mobile = normalizeDigits(g("mobile"));
-    if(!/^\d{6,15}$/.test(mobile)) return showAlertPopup("সঠিক Mobile Number দিন (কমপক্ষে ৬ অঙ্ক)।");
-    const nid = normalizeDigits(g("nid"));
-    const customMid = normalizeDigits(g("memberId"));
-    const ms = await all("members");
-
-    /* ---- Member / Customer ID must be UNIQUE ---- */
-    let mid = customMid;
-    if(mid){
-      if(!/^[a-zA-Z0-9._-]{2,30}$/.test(mid)) return showAlertPopup("Member ID-তে শুধু অক্ষর, সংখ্যা, ড্যাশ(-), ডট(.) ও আন্ডারস্কোর(_) ব্যবহার করুন।");
-      if(ms.some(x => x.memberId && String(x.memberId).toLowerCase() === mid.toLowerCase())) return showAlertPopup("এই Member ID ইতোমধ্যে ব্যবহৃত হয়েছে। ভিন্ন একটি Member ID দিন।");
-    } else {
-      /* Auto-generated from last 6 digits of mobile; ensure uniqueness by appending */
-      const base = mobile.slice(-6);
-      mid = base;
-      let n = 0;
-      while(ms.some(x => x.memberId === mid)){ n++; mid = base + n; }
-    }
-
-    /* ---- Same mobile cannot open a second account ---- */
-    if(ms.some(x => x.mobile === mobile)) return showAlertPopup("এই মোবাইল নম্বর দিয়ে ইতোমধ্যে একটি account আছে। প্রতিটি মোবাইল নম্বর দিয়ে শুধু একটি account খোলা যাবে।");
+    let mobile = normalizeDigits(g("mobile")), mid = mobile.slice(-6);
+    if(mobile.length < 6) return showAlertPopup("সঠিক Mobile Number দিন।");
+    let ms = await all("members");
+    if(ms.some(x => x.memberId === mid)) return showAlertPopup("এই Member ID ইতোমধ্যে ব্যবহৃত হয়েছে।");
+    if(ms.some(x => x.mobile === mobile)) return showAlertPopup("এই মোবাইল নম্বর ইতোমধ্যে একজন সদস্যের জন্য ব্যবহৃত হয়েছে।");
     if(ms.some(x => x.whatsapp === g("whatsapp"))) return showAlertPopup("এই WhatsApp নম্বর ইতোমধ্যে ব্যবহৃত হয়েছে।");
     if(g("email") && ms.some(x => norm(x.email) === norm(g("email")))) return showAlertPopup("এই Email ID ইতোমধ্যে ব্যবহৃত হয়েছে।");
-
-    /* ---- Same NID cannot open a second account ---- */
-    if(nid && ms.some(x => x.nid && normalizeDigits(String(x.nid)) === nid)) return showAlertPopup("এই NID নম্বর দিয়ে ইতোমধ্যে একটি account আছে। প্রতিটি NID দিয়ে শুধু একটি account খোলা যাবে।");
-
-    /* ---- Cloud-side checks (covers other devices) ---- */
     if(cloudReady){
       try{
-        const chk = await supa.from("members").select("member_id,mobile,whatsapp,email,nid").or(`member_id.eq.${mid},mobile.eq.${mobile}`).limit(10);
+        const chk = await supa.from("members").select("member_id,mobile,whatsapp,email").or(`member_id.eq.${mid},mobile.eq.${mobile}`).limit(4);
         if(chk.data){
-          if(chk.data.some(x => x.member_id && String(x.member_id).toLowerCase() === mid.toLowerCase())) return showAlertPopup("এই Member ID ইতোমধ্যে ব্যবহৃত হয়েছে। ভিন্ন একটি Member ID দিন।");
-          if(chk.data.some(x => x.mobile === mobile)) return showAlertPopup("এই মোবাইল নম্বর দিয়ে ইতোমধ্যে একটি account আছে। প্রতিটি মোবাইল নম্বর দিয়ে শুধু একটি account খোলা যাবে।");
-        }
-        if(nid){
-          const chkNid = await supa.from("members").select("id").eq("nid", nid).limit(1);
-          if(chkNid && chkNid.data && chkNid.data.length) return showAlertPopup("এই NID নম্বর দিয়ে ইতোমধ্যে একটি account আছে। প্রতিটি NID দিয়ে শুধু একটি account খোলা যাবে।");
+          if(chk.data.some(x => x.member_id === mid)) return showAlertPopup("এই Member ID ইতোমধ্যে ব্যবহৃত হয়েছে।");
+          if(chk.data.some(x => x.mobile === mobile)) return showAlertPopup("এই মোবাইল নম্বর ইতোমধ্যে একজন সদস্যের জন্য ব্যবহৃত হয়েছে।");
         }
       }catch(err){ console.warn("cloud duplicate check", err); }
     }
-    let m = { id:id(), type:"member", memberId:mid, nameBn:g("nameBn"), nameEn:g("nameEn"), fatherBn:g("fatherBn"), fatherEn:g("fatherEn"), motherBn:g("motherBn"), motherEn:g("motherEn"), mobile, whatsapp:normalizeDigits(g("whatsapp")), email:g("email"), nid:nid || "", dob:g("dob"), profession:g("profession"), address:g("address"), monthlyInstallment:Number(g("monthlyInstallment")), localPassword:g("password"), status:"pending", createdAt:Date.now(), updatedAt:Date.now() };
+    let m = { id:id(), type:"member", memberId:mid, nameBn:g("nameBn"), nameEn:g("nameEn"), fatherBn:g("fatherBn"), fatherEn:g("fatherEn"), motherBn:g("motherBn"), motherEn:g("motherEn"), mobile, whatsapp:normalizeDigits(g("whatsapp")), email:g("email"), nid:g("nid"), dob:g("dob"), profession:g("profession"), address:g("address"), monthlyInstallment:Number(g("monthlyInstallment")), localPassword:g("password"), status:"pending", createdAt:Date.now(), updatedAt:Date.now() };
     await put("members", m);
     await queue("createMember", m);
     if(cloudReady){
@@ -2582,10 +2557,6 @@ function showAdminMemberEditPopup(m){
     x.mobile = normalizeDigits($("#emobile").value);
     x.whatsapp = normalizeDigits($("#ewhatsapp").value);
     x.email = $("#eemail").value.trim(); x.nid = normalizeDigits($("#enid").value);
-    /* Enforce mobile/NID uniqueness on edit too (excluding this record). */
-    const allMs = await all("members");
-    if(x.mobile && allMs.some(r => r.id !== x.id && r.mobile === x.mobile)) return showAlertPopup("এই মোবাইল নম্বর অন্য একজন সদস্যে ব্যবহৃত। ভিন্ন নম্বর দিন।");
-    if(x.nid && allMs.some(r => r.id !== x.id && r.nid && normalizeDigits(String(r.nid)) === x.nid)) return showAlertPopup("এই NID নম্বর অন্য একজন সদস্যে ব্যবহৃত। ভিন্ন NID দিন।");
     x.profession = $("#eprofession").value.trim(); x.monthlyInstallment = Number($("#einstallment").value || 0);
     x.address = $("#eaddress").value.trim(); x.updatedAt = Date.now(); x.editedBy = session.username;
     await put("members", x); await queue("updateMember", x); await log("গুরুত্বপূর্ণ Account Activity", `Member Edited: ${x.memberId}`);
@@ -2932,5 +2903,5 @@ async function init(){
 }
 init();
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a31246da2bd55658',t:'MTc4Nzc0MTQzOQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a3122f3ea843555e',t:'MTc4Nzc0MDQ3Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
