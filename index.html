@@ -1,15 +1,12 @@
-<!doctype html>
-<html lang="bn">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#e9f7ef">
 <title>ধ্রুব সংসদ — Offline Management System</title>
 <style>
   .db-status { font-size: 12px; margin: 8px 0; text-align: center; }
   .db-online { color: #2d8a57; }
   .db-offline { color: #d88a35; }
   .db-connecting { color: #6b7470; }
+  .db-online { color: var(--online); }
+  .db-offline { color: var(--offline); }
+  .db-connecting { color: var(--muted); }
 </style>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial,"Noto Sans Bengali",sans-serif;background:#f5f7f6;color:#202725;font-size:14px; -webkit-text-size-adjust:100%}button,input,select,textarea{font:inherit}button{border:0;border-radius:8px;padding:10px 14px;cursor:pointer;touch-action:manipulation}.hidden{display:none!important}.login{min-height:100vh;display:grid;place-items:center;padding:16px;background:linear-gradient(#fff,#f1faf5)}.login-card{width:min(390px,100%);background:#fff;border:1px solid #dce8e1;border-radius:16px;padding:20px;box-shadow:0 8px 28px #00000010}.brand{text-align:center;font-size:22px;font-weight:700;margin-bottom:16px}.sub{text-align:center;color:#6b7470;font-size:12px;margin-top:-10px;margin-bottom:16px}.field{margin-bottom:12px}.field label{display:block;font-size:12px;font-weight:700;margin-bottom:6px}.field input,.field select,.field textarea{width:100%;border:1px solid #ccd8d2;border-radius:8px;padding:10px;background:#fff;font-size:14px}.primary{background:#5eaa7b;color:#fff}.danger{background:#d86d6d;color:#fff}.neutral{background:#fff;border:1px solid #cfd8d3}.warn{background:#fff0bd}
@@ -17,2591 +14,403 @@
 
 /* Top Tab Bar Styles */
 .top-tab-bar{background:#fff;border-bottom:1px solid #dce5e0;display:flex;overflow-x:auto;white-space:nowrap;padding:0 12px;gap:6px;-webkit-overflow-scrolling:touch;position:sticky;top:53px;z-index:4}
+/* ===== Theme variables — Light (default) ===== */
+:root{
+ --bg:#f5f7f6; --surface:#ffffff; --surface-2:#fffdf3; --text:#202725; --muted:#6b7470;
+ --border:#dfe7e2; --border-soft:#dce8e1; --input-border:#ccd8d2;
+ --accent:#5eaa7b; --accent-text:#ffffff;
+ --notice-bg:#eef7f1; --notice-border:#d4e9db;
+ --error-bg:#fff0f0; --error-border:#f1c4c4; --error-text:#8b3030;
+ --badge-active:#dcf4e5; --pending-bg:#fff1bf; --rejected-bg:#ffdede; --warn-bg:#fff0bd;
+ --danger:#d86d6d;
+ --table-head:#f2f7f4; --row-border:#e7ece9;
+ --shadow:0 8px 28px #00000010; --overlay:rgba(0,0,0,0.4);
+ --toast-bg:#202725; --toast-text:#ffffff;
+ --login-a:#ffffff; --login-b:#f1faf5;
+ --online:#2d8a57; --offline:#d88a35;
+}
+/* ===== AMOLED Dark — full black (#000000) background ===== */
+:root[data-theme="dark"]{
+ --bg:#000000; --surface:#0c1210; --surface-2:#111b16; --text:#e9f1ed; --muted:#8fa39a;
+ --border:#1e2b25; --border-soft:#1e2b25; --input-border:#24352d;
+ --accent:#35c97d; --accent-text:#04130b;
+ --notice-bg:#0e1f17; --notice-border:#1c3529;
+ --error-bg:#2a1414; --error-border:#4a2424; --error-text:#f0a3a3;
+ --badge-active:#123527; --pending-bg:#3a3218; --rejected-bg:#3a1d1d; --warn-bg:#3a3218;
+ --danger:#e06c6c;
+ --table-head:#101a15; --row-border:#1a2620;
+ --shadow:0 8px 28px rgba(0,0,0,0.65); --overlay:rgba(0,0,0,0.72);
+ --toast-bg:#22312b; --toast-text:#e9f1ed;
+ --login-a:#000000; --login-b:#070d0a;
+ --online:#3ddc84; --offline:#e0a458;
+}
+/* System dark mode (when user has not chosen manually) */
+@media (prefers-color-scheme: dark){
+ :root:not([data-theme="light"]):not([data-theme="dark"]){
+  --bg:#000000; --surface:#0c1210; --surface-2:#111b16; --text:#e9f1ed; --muted:#8fa39a;
+  --border:#1e2b25; --border-soft:#1e2b25; --input-border:#24352d;
+  --accent:#35c97d; --accent-text:#04130b;
+  --notice-bg:#0e1f17; --notice-border:#1c3529;
+  --error-bg:#2a1414; --error-border:#4a2424; --error-text:#f0a3a3;
+  --badge-active:#123527; --pending-bg:#3a3218; --rejected-bg:#3a1d1d; --warn-bg:#3a3218;
+  --danger:#e06c6c;
+  --table-head:#101a15; --row-border:#1a2620;
+  --shadow:0 8px 28px rgba(0,0,0,0.65); --overlay:rgba(0,0,0,0.72);
+  --toast-bg:#22312b; --toast-text:#e9f1ed;
+  --login-a:#000000; --login-b:#070d0a;
+  --online:#3ddc84; --offline:#e0a458;
+ }
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,"Noto Sans Bengali",sans-serif;background:var(--bg);color:var(--text);font-size:14px;-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+button,input,select,textarea{font:inherit}
+button{border:0;border-radius:8px;padding:10px 14px;cursor:pointer;touch-action:manipulation}
+.hidden{display:none!important}
+.login{min-height:100vh;display:grid;place-items:center;padding:16px;background:linear-gradient(var(--login-a),var(--login-b))}
+.login-card{width:min(390px,100%);background:var(--surface);border:1px solid var(--border-soft);border-radius:16px;padding:20px;box-shadow:var(--shadow)}
+.brand{text-align:center;font-size:22px;font-weight:700;margin-bottom:16px}
+.sub{text-align:center;color:var(--muted);font-size:12px;margin-top:-10px;margin-bottom:16px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;font-weight:700;margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;border:1px solid var(--input-border);border-radius:8px;padding:10px;background:var(--surface);color:var(--text);font-size:14px}
+textarea{min-height:70px}
+.primary{background:var(--accent);color:var(--accent-text)}
+.danger{background:var(--danger);color:#fff}
+.neutral{background:var(--surface);border:1px solid var(--border)}
+.warn{background:var(--warn-bg)}
+.theme-btn{min-width:40px;padding:8px 10px;font-size:15px;line-height:1}
+
+.topbar{position:sticky;top:0;z-index:5;background:var(--surface);border-bottom:1px solid var(--border-soft);padding:10px 12px;padding-top:max(10px,env(safe-area-inset-top));display:flex;align-items:center;justify-content:space-between}
+.topbar strong{font-size:16px}
+.userbox{display:flex;gap:6px;align-items:center;font-size:12px}
+
+/* Top Tab Bar (desktop / tablet) */
+.top-tab-bar{background:var(--surface);border-bottom:1px solid var(--border-soft);display:flex;overflow-x:auto;white-space:nowrap;padding:0 12px;gap:6px;-webkit-overflow-scrolling:touch;position:sticky;top:53px;z-index:4}
 .top-tab-bar::-webkit-scrollbar{display:none}
 .top-tab-btn{background:transparent;border:none;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;color:#6b7470;border-bottom:3px solid transparent;border-radius:0}
 .top-tab-btn:hover{color:#5eaa7b}
 .top-tab-btn.active-tab{color:#5eaa7b;border-bottom-color:#5eaa7b}
+.top-tab-btn{background:transparent;border:none;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer;color:var(--muted);border-bottom:3px solid transparent;border-radius:0;min-height:44px;flex:0 0 auto}
+.top-tab-btn:hover{color:var(--accent)}
+.top-tab-btn.active-tab{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-icon{font-size:14px;margin-right:5px}
+.tab-label{white-space:nowrap}
 
 .layout{display:block;min-height:calc(100vh - 105px)}
 .main{padding:12px;width:100%;max-width:none;margin:0}
 .section-title{font-size:16px;font-weight:700;margin:6px 0 12px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}.card{background:#fff;border:1px solid #dfe7e2;border-radius:12px;padding:12px}.metric{font-size:20px;font-weight:700;margin-top:6px}.muted{color:#6f7974;font-size:11px}.actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.table-wrap{overflow:auto;background:#fff;border:1px solid #dfe7e2;border-radius:12px;-webkit-overflow-scrolling:touch}.table{width:100%;border-collapse:collapse;min-width:680px;font-size:12px}.table th,.table td{border-bottom:1px solid #e7ece9;padding:9px;text-align:left;white-space:nowrap}.table th{background:#f2f7f4;font-size:11px}.badge{display:inline-block;padding:4px 8px;border-radius:10px;font-size:10px}.active{background:#dcf4e5}.pending{background:#fff1bf}.rejected{background:#ffdede}.due{background:#ffdede}.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}.notice{padding:10px;border-radius:8px;background:#eef7f1;border:1px solid #d4e9db;margin:10px 0;font-size:12px}.modal{position:fixed;inset:0;background:#0006;display:grid;place-items:center;padding:12px;z-index:20}.modal-card{width:min(520px,100%);background:#fff;border-radius:14px;padding:18px;max-height:90vh;overflow-y:auto}.toast{position:fixed;right:12px;bottom:12px;background:#202725;color:#fff;padding:10px 14px;border-radius:8px;z-index:50;font-size:12px}
+.section-title{font-size:16px;font-weight:700;margin:6px 0 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px}
+.metric{font-size:20px;font-weight:700;margin-top:6px}
+.muted{color:var(--muted);font-size:11px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.table-wrap{overflow:auto;background:var(--surface);border:1px solid var(--border);border-radius:12px;-webkit-overflow-scrolling:touch}
+.table{width:100%;border-collapse:collapse;min-width:680px;font-size:12px}
+.table th,.table td{border-bottom:1px solid var(--row-border);padding:9px;text-align:left;white-space:nowrap}
+.table th{background:var(--table-head);font-size:11px}
+.table button{min-height:34px;padding:6px 10px}
+.badge{display:inline-block;padding:4px 8px;border-radius:10px;font-size:10px}
+.active{background:var(--badge-active)}
+.pending{background:var(--pending-bg)}
+.rejected{background:var(--rejected-bg)}
+.due{background:var(--rejected-bg)}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.notice{padding:10px;border-radius:8px;background:var(--notice-bg);border:1px solid var(--notice-border);margin:10px 0;font-size:12px}
+.notice-error{background:var(--error-bg);border-color:var(--error-border);color:var(--error-text)}
+.profile-hero{background:linear-gradient(135deg,var(--notice-bg),var(--bg))}
+.modal{position:fixed;inset:0;background:var(--overlay);display:grid;place-items:center;padding:12px;z-index:20}
+.modal-card{width:min(520px,100%);background:var(--surface);border-radius:14px;padding:18px;max-height:90vh;overflow-y:auto}
+.toast{position:fixed;right:12px;bottom:12px;background:var(--toast-bg);color:var(--toast-text);padding:10px 14px;border-radius:8px;z-index:50;font-size:12px}
 
 /* Custom Alert Modal Style */
 .alert-modal{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:grid;place-items:center;padding:12px;z-index:9999}
 .alert-card{width:min(320px,100%);background:#fff;border-radius:12px;padding:20px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.2)}
 .alert-card h3{margin:0 0 10px;color:#d86d6d;font-size:18px}
 .alert-card p{margin:0 0 16px;color:#444;font-size:13px}
+.alert-modal{position:fixed;inset:0;background:var(--overlay);display:grid;place-items:center;padding:12px;z-index:9999}
+.alert-card{width:min(320px,100%);background:var(--surface);border-radius:12px;padding:20px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.2)}
+.alert-card h3{margin:0 0 10px;color:var(--danger);font-size:18px}
+.alert-card p{margin:0 0 16px;color:var(--text);font-size:13px}
 
 /* Password Toggle Wrapper Style */
 .password-field-wrap{position:relative;display:flex;align-items:center}
 .password-field-wrap input{width:100%;padding-right:38px}
 .password-toggle-btn{position:absolute;right:10px;background:transparent;border:none;cursor:pointer;padding:4px;font-size:15px;color:#6b7470}
+.password-toggle-btn{position:absolute;right:10px;background:transparent;border:none;cursor:pointer;padding:4px;font-size:15px;color:var(--muted)}
 
 /* === Mobile Optimized Media Queries === */
+/* ===== Mobile: bottom tab navigation + large touch targets ===== */
 @media(max-width:760px){
  .main{padding:10px;width:100%}
+ .top-tab-bar{position:fixed;top:auto;bottom:0;left:0;right:0;z-index:6;border-bottom:none;border-top:1px solid var(--border-soft);padding:0 2px calc(2px + env(safe-area-inset-bottom,0px));gap:0;box-shadow:0 -4px 18px rgba(0,0,0,0.10)}
+ .top-tab-btn{flex:1 1 0;min-width:0;padding:7px 1px 6px;font-size:9.5px;display:flex;flex-direction:column;align-items:center;gap:2px;justify-content:flex-start;border-bottom:none;border-top:3px solid transparent;min-height:56px}
+ .tab-icon{font-size:20px;margin:0;line-height:1}
+ .tab-label{white-space:normal;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;line-height:1.15;text-align:center;max-width:100%}
+ .top-tab-btn.active-tab{border-top-color:var(--accent)}
+ .layout{min-height:calc(100vh - 53px)}
+ .main{padding:10px;padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
  .grid{grid-template-columns:repeat(2, 1fr)}
  .form-grid{grid-template-columns:1fr}
  .userbox span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .table{min-width:560px}
+ .actions button{min-height:46px;flex:1;text-align:center}
+ .login-card button{min-height:46px}
+ .field input,.field select{min-height:46px;font-size:16px}
+ .field textarea{font-size:16px}
+ .toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+ .topbar{gap:8px}
 }
 @media(max-width:420px){
  .grid{grid-template-columns:1fr}
- .actions button{flex:1;text-align:center}
-}
-</style>
-</head>
-<body>
-<div id="app"></div>
-<script>
-/* Supabase Configuration — Publishable Key ONLY.
-   No service role key / secret key / admin key — কখনো frontend-এ রাখা যাবে না। */
-window.DHRUVO_SUPABASE_CONFIG = {
-  url: "https://fegxtzxlowhmbizlbzma.supabase.co",
-  publishableKey: "sb_publishable_b2UcygpdgxR8WP7LprAEXg_rl1kOMIr"
-};
-</script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script>
-
-/* ============================================================
-   SUPABASE CLOUD / OFFLINE-FIRST INTEGRATION LAYER
-   (পুরনো cloud SDK সম্পূর্ণ অপসারণ করা হয়েছে — এখন শুধু Supabase)
-   Existing IndexedDB remains the primary local cache.
-   Supabase (REST + Auth + Realtime) is the cloud source/sync target.
-   ============================================================ */
-const SUPABASE_URL = window.DHRUVO_SUPABASE_CONFIG?.url || "https://fegxtzxlowhmbizlbzma.supabase.co";
-const SUPABASE_KEY = window.DHRUVO_SUPABASE_CONFIG?.publishableKey || "sb_publishable_b2UcygpdgxR8WP7LprAEXg_rl1kOMIr";
-
-let supa = null, supaSec = null;      // main + secondary auth client
-let cloudReady = false, online = navigator.onLine, lastDbState = null;
-let realtimeChannel = null, rtStarted = false, reconcileTimer = null, syncBusy = false;
-let suppressCloudQueue = false;
-let logoutInProgress = false;
-let refreshTimer = null;
-
-/* Synthetic Supabase Auth emails — same scheme as the previous system */
-const ADMIN_EMAIL = "admin@admin.dhruvo-sangsad.local";
-function emailPrefix(s){ s = String(s || "").toLowerCase().replace(/[^a-z0-9._-]/g, ""); return s || "x"; }
-const emailForMember = m => `${emailPrefix(m?.memberId || m?.id)}@auth.dhruvo-sangsad.local`;
-const emailForMaker  = m => `${emailPrefix(m?.username || m?.id)}@maker.dhruvo-sangsad.local`;
-/* Supabase enforces a 6-character minimum password. Short local passwords
-   (the app allows 4+) get a deterministic cloud-only suffix so the cloud
-   account always works while the user keeps typing their real password. */
-function deriveCloudPw(pw){ pw = String(pw == null ? "" : pw); return pw.length >= 6 ? pw : pw + "#dhruvo"; }
-
-/* Local store name -> Supabase table */
-const TABLE_MAP = { members:"members", deposits:"deposits", notifications:"notifications", activityLogs:"activity_logs", settings:"settings" };
-
-function ms(v){ if(v==null || v==="")return 0; const t = typeof v==="number" ? v : (typeof v==="string" ? Date.parse(v) : new Date(v).getTime()); return isNaN(t) ? 0 : t; }
-function iso(v){ if(!v)return null; const d = new Date(typeof v==="number" ? v : v); return isNaN(d.getTime()) ? null : d.toISOString(); }
-function isoFromDmy(s){ if(!s)return null; const p = String(s).trim().split("-"); if(p.length!==3)return null; return `${p[2]}-${p[1]}-${p[0]}`; }
-function dmyFromIso(s){ if(!s)return null; const p = String(s).slice(0,10).split("-"); if(p.length!==3)return null; return `${p[2]}-${p[1]}-${p[0]}`; }
-
-function supaInit(){
-  if(!window.supabase || !window.supabase.createClient) return false;
-  try{
-    supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      auth: { storageKey:"dhruvoSupabaseAuth", persistSession:true, autoRefreshToken:true, detectSessionInUrl:true }
-    });
-    /* Secondary client — background account creation / password change,
-       without touching the main user's session (same pattern as before). */
-    supaSec = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      auth: { storageKey:"dhruvoSupabaseAuthSecondary", persistSession:true, autoRefreshToken:false, detectSessionInUrl:false }
-    });
-    supa.auth.onAuthStateChange(event => {
-      if(event === "SIGNED_OUT" && session && !logoutInProgress){
-        stopRealtime(); stopReconcileTimer();
-        session = null;
-        try{ sessionStorage.removeItem("dhruvoSession"); }catch(e){}
-        renderLogin();
-      }
-    });
-    return true;
-  }catch(e){
-    console.error("Supabase init", e);
-    return false;
-  }
-}
-
-/* ---------------- Database connection status ---------------- */
-async function cloudCheck(){
-  if(!navigator.onLine) return false;
-  try{
-    await fetch(SUPABASE_URL + "/rest/v1/settings?select=key&limit=1", { headers:{ apikey:SUPABASE_KEY, "Authorization":"Bearer " + SUPABASE_KEY } });
-    return true; /* any HTTP response = database reachable */
-  }catch(e){ return false; }
-}
-function updateDbStatus(state){
-  if(state === true) cloudReady = true;
   else if(state === false) cloudReady = false;
   if(state !== null) lastDbState = state;
   const topEl = document.getElementById("dbStatus");
   if(topEl){ topEl.textContent = cloudReady ? "● Cloud Online" : "● Offline / Local"; topEl.style.color = cloudReady ? "#2d8a57" : "#d88a35"; }
+  if(topEl){ topEl.textContent = cloudReady ? "● Cloud Online" : "● Offline / Local"; topEl.style.color = cloudReady ? "var(--online)" : "var(--offline)"; }
   const loginEl = document.getElementById("dbLoginStatus");
   if(loginEl){
     if(state === null){ loginEl.textContent = "⚪ Database Connecting..."; loginEl.className = "db-status db-connecting"; }
-    else if(cloudReady){ loginEl.textContent = "🟢 Database Connected"; loginEl.className = "db-status db-online"; }
-    else { loginEl.textContent = "🔴 Database Offline"; loginEl.className = "db-status db-offline"; }
-  }
-  if(state === true){ try{ syncQueue(); }catch(e){} }
-}
-function addDbStatusToTopbar(){
-  const tb = document.querySelector(".topbar .userbox");
-  if(!tb) return;
-  if(!document.getElementById("dbStatus")){
-    const s = document.createElement("span");
     s.id = "dbStatus";
     s.style.cssText = "font-size:11px;font-weight:700;margin-right:4px";
     s.textContent = cloudReady ? "● Cloud Online" : "● Offline / Local";
     s.style.color = cloudReady ? "#2d8a57" : "#d88a35";
+    s.style.color = cloudReady ? "var(--online)" : "var(--offline)";
     tb.insertBefore(s, tb.firstChild);
   }
 }
-
-/* ---------------- Row mapping (local camelCase <-> Supabase snake_case) ---------------- */
-function memberCloudToLocal(c){
-  return {
-    id:c.id, memberId:c.member_id,
-    nameBn:c.name_bn, nameEn:c.name_en,
-    fatherBn:c.father_bn, fatherEn:c.father_en,
-    motherBn:c.mother_bn, motherEn:c.mother_en,
-    mobile:c.mobile, whatsapp:c.whatsapp, email:c.email, nid:c.nid, dob:c.dob,
-    profession:c.profession, address:c.address,
-    monthlyInstallment:Number(c.monthly_installment || 0),
-    status:c.status, type:c.type,
-    username:c.username || undefined,
-    authUid:c.auth_uid || null,
-    createdAt:ms(c.created_at) || undefined,
-    updatedAt:ms(c.updated_at) || undefined
-  };
-}
-function memberLocalToCloud(m){
-  return {
-    id:m.id, member_id:m.memberId,
-    name_bn:m.nameBn, name_en:m.nameEn,
-    father_bn:m.fatherBn, father_en:m.fatherEn,
-    mother_bn:m.motherBn, mother_en:m.motherEn,
-    mobile:m.mobile, whatsapp:m.whatsapp, email:m.email, nid:m.nid, dob:m.dob,
-    profession:m.profession, address:m.address,
-    monthly_installment:Number(m.monthlyInstallment || 0),
-    status:m.status, type:m.type,
-    username:m.username || null,
-    auth_uid:m.authUid || null,
-    created_at:ms(m.createdAt),
-    updated_at:ms(m.updatedAt || m.createdAt) || Date.now()
-  };
-}
-function depositCloudToLocal(c){
-  return {
-    id:c.id, memberId:c.member_id, memberName:c.member_name,
-    date:dmyFromIso(c.deposit_date) || c.date || "",
-    type:c.type, description:c.description,
-    amount:Number(c.amount || 0),
-    paymentMethod:c.payment_method, paymentDetail:c.payment_detail,
-    cashDepositor:c.cash_depositor, bankMethod:c.bank_method, mobileMethod:c.mobile_method,
-    reference:c.reference, note:c.note,
-    submittedBy:c.submitted_by, submittedAt:ms(c.submitted_at) || undefined,
-    status:c.status, reviewedBy:c.reviewed_by, reviewedAt:ms(c.reviewed_at) || undefined,
-    createdAt:ms(c.created_at) || undefined, updatedAt:ms(c.updated_at) || undefined
-  };
-}
-function depositLocalToCloud(d){
-  return {
-    id:d.id, member_id:d.memberId, member_name:d.memberName,
-    date:d.date || null,
-    deposit_date:isoFromDmy(d.date),
-    type:d.type, description:d.description,
-    amount:Number(d.amount || 0),
-    payment_method:d.paymentMethod, payment_detail:d.paymentDetail,
-    cash_depositor:d.cashDepositor || null, bank_method:d.bankMethod || null, mobile_method:d.mobileMethod || null,
-    reference:d.reference || null, note:d.note,
-    submitted_by:d.submittedBy, submitted_at:ms(d.submittedAt),
-    status:d.status, reviewed_by:d.reviewedBy || null, reviewed_at:ms(d.reviewedAt),
-    created_at:ms(d.createdAt || d.submittedAt),
-    updated_at:ms(d.updatedAt || d.createdAt || d.submittedAt) || Date.now()
-  };
-}
-function notificationCloudToLocal(c){
-  return { id:c.id, message:c.message, audience:c.audience, type:c.type, memberId:c.member_id, depositId:c.deposit_id,
-           createdAt:ms(c.created_at) || undefined, updatedAt:ms(c.updated_at) || undefined };
-}
-function notificationLocalToCloud(n){
-  return { id:n.id, message:n.message, audience:n.audience || null, type:n.type || null,
-           member_id:n.memberId || null, deposit_id:n.depositId || null,
-           created_at:ms(n.createdAt) || Date.now(), updated_at:ms(n.updatedAt || n.createdAt) || Date.now() };
-}
-function logCloudToLocal(c){
-  return { id:c.id, user:c.user, role:c.role, action:c.action, details:c.details, date:c.date, time:c.time,
-           createdAt:ms(c.created_at) || undefined, updatedAt:ms(c.updated_at) || undefined };
-}
-function logLocalToCloud(l){
-  return { id:l.id, user:l.user, role:l.role, action:l.action, details:l.details, date:l.date, time:l.time,
-           created_at:ms(l.createdAt) || Date.now(), updated_at:ms(l.updatedAt || l.createdAt) || Date.now() };
-}
-function settingCloudToLocal(c){
-  return { id:c.id, key:c.key, value:c.value, updatedAt:ms(c.updated_at) || undefined };
-}
-function settingLocalToCloud(s){
-  return { id:s.id, key:s.key, value:s.value, updated_at:ms(s.updatedAt || s.createdAt) || Date.now() };
-}
-function cloudToLocal(store, row){
-  if(store === "members")return memberCloudToLocal(row);
-  if(store === "deposits")return depositCloudToLocal(row);
-  if(store === "notifications")return notificationCloudToLocal(row);
-  if(store === "activityLogs")return logCloudToLocal(row);
-  if(store === "settings")return settingCloudToLocal(row);
-  return row;
-}
-function localToCloud(store, rec){
-  if(store === "members")return memberLocalToCloud(rec);
-  if(store === "deposits")return depositLocalToCloud(rec);
-  if(store === "notifications")return notificationLocalToCloud(rec);
-  if(store === "activityLogs")return logLocalToCloud(rec);
-  if(store === "settings")return settingLocalToCloud(rec);
-  return rec;
-}
-/* Fields that exist only in the local cache (no Supabase column).
-   They are preserved when a cloud row is merged into IndexedDB. */
-const LOCAL_ONLY_FIELDS = ["localPassword","approvedAt","approvedBy","rejectedAt","rejectedBy","editedBy"];
-async function mergeCloudRow(store, row){
-  const mapped = cloudToLocal(store, row);
-  if(mapped && mapped.id){
-    const local = await one(store, mapped.id);
-    if(local) LOCAL_ONLY_FIELDS.forEach(k => { if(local[k] !== undefined && (mapped[k] === undefined || mapped[k] === null)) mapped[k] = local[k]; });
-  }
-  await put(store, mapped);
-}
-
-/* ---------------- Cloud CRUD (Supabase REST) ---------------- */
-async function cloudWrite(store, record){
-  if(!supa) return false;
-  if(store === "settings" && record?.key === "adminPassword") return false; /* never upload the admin secret to the cloud */
-  const { error } = await supa.from(TABLE_MAP[store]).upsert(localToCloud(store, record), { onConflict:"id" });
-  if(error) throw error;
-  return true;
-}
-async function cloudDelete(store, recordId){
-  if(!supa || !recordId) return false;
-  const { error } = await supa.from(TABLE_MAP[store]).delete().eq("id", recordId);
-  if(error) throw error;
-  return true;
-}
-function rowMatchesMemberScope(store, row){
-  if(!session) return false;
-  if(store === "members")return row.member_id === session.memberId || row.id === session.memberRecordId;
-  if(store === "deposits")return row.member_id === session.memberId;
-  if(store === "notifications")return row.audience === "member" && row.member_id === session.memberId;
-  if(store === "activityLogs")return row.user === session.memberId || row.user === session.username;
-  return false;
-}
-function rowMatchesSession(store, row){
-  if(!session) return false;
-  if(role(session) !== "MEMBER") return true;
-  return rowMatchesMemberScope(store, row);
-}
-async function cloudPullStore(store){
-  if(!supa || !cloudReady) return 0;
-  let q = supa.from(TABLE_MAP[store]).select("*");
-  if(role(session) === "MEMBER"){
-    if(store === "members")q = q.eq("member_id", session.memberId);
-    else if(store === "deposits")q = q.eq("member_id", session.memberId);
-    else if(store === "notifications")q = q.eq("member_id", session.memberId);
-    else if(store === "activityLogs")q = q.eq("user", session.memberId);
-    else return 0;
-  }
-  const { data, error } = await q;
-  if(error) throw error;
-  const rows = data || [];
-  let count = 0;
-  for(const row of rows){
-    if(!row || !row.id) continue;
-    if(role(session) === "MEMBER" && !rowMatchesMemberScope(store, row)) continue;
-    const local = await one(store, row.id);
-    if(!local || ms(row.updated_at || row.created_at) >= ms(local.updatedAt || local.createdAt)){
-      suppressCloudQueue = true;
-      try{ await mergeCloudRow(store, row); }finally{ suppressCloudQueue = false; }
-      count++;
-    }
-  }
-  return count;
-}
-async function cloudPullAll(){
-  if(!supa || !cloudReady) return {};
-  const list = role(session) === "MEMBER"
-    ? ["members","deposits","notifications","activityLogs"]
-    : ["members","deposits","notifications","activityLogs","settings"];
-  const result = {};
-  for(const store of list){
-    try{ result[store] = await cloudPullStore(store); }catch(e){ console.warn("Cloud pull", store, e); }
-  }
-  return result;
-}
-async function cloudStoreCount(store){
-  if(!supa || !cloudReady) return 0;
-  try{
-    const { count, error } = await supa.from(TABLE_MAP[store]).select("*", { count:"exact", head:true });
-    if(error) return 0;
-    return count || 0;
-  }catch(e){ return 0; }
-}
-
-/* ---------------- Supabase Auth account helpers ---------------- */
-function profileAttrsForRecord(r){
-  return { role: r?.type === "maker" ? "MAKER" : "MEMBER", memberId: r?.memberId || null, username: r?.username || null, displayName: r?.nameBn || r?.nameEn || null };
-}
-function profileAttrsForSession(s){
-  return { role: s.role, memberId: s.memberId || s.memberRecord?.memberId || null,
-           username: s.username || s.memberRecord?.username || null,
-           displayName: s.displayName || s.memberRecord?.nameBn || s.memberRecord?.nameEn || null };
-}
-async function fetchProfile(client, uid){
-  try{
-    const r1 = await client.from("profiles").select("*").eq("uid", uid).maybeSingle();
-    if(r1.data && !r1.error) return r1.data;
-    const r2 = await client.from("profiles").select("*").eq("id", uid).maybeSingle();
-    if(r2.data && !r2.error) return r2.data;
-  }catch(e){ console.warn("fetchProfile", e); }
-  return null;
-}
-async function ensureProfileForClient(client, uid, attrs){
-  if(!client || !uid) return null;
-  try{
-    const row = await fetchProfile(client, uid);
-    if(row) return row;
-    const payload = { role:attrs.role, member_id:attrs.memberId || null, username:attrs.username || null, display_name:attrs.displayName || null,
-                      created_at:Date.now(), updated_at:Date.now() };
-    let ins = await client.from("profiles").insert({ uid, ...payload });
-    if(ins.error) ins = await client.from("profiles").insert({ id:uid, ...payload });
-    if(ins.error) console.warn("profile insert", ins.error);
-    return null;
-  }catch(e){ console.warn("profile ensure", e); return null; }
-}
-/* Create the member/maker's Supabase Auth account (secondary client) and
-   recover the UID if the account already exists. */
-async function ensureAuthForRecord(record){
-  if(!supaSec || !cloudReady) return null;
-  if(record?.authUid) return record.authUid;
-  if(!record?.localPassword) return null;
-  const email = record.type === "maker" ? emailForMaker(record) : emailForMember(record);
-  try{
-    const cpw = deriveCloudPw(record.localPassword);
-    let res = await supaSec.auth.signUp({ email, password:cpw });
-    if(res.error){
-      if(/already (been )?registered/i.test(String(res.error.message || res.error.description || ""))){
-        res = await supaSec.auth.signInWithPassword({ email, password:cpw });
-      }
-      if(res.error) return null;
-    }
-    const uid = res.data?.user?.id || res.data?.session?.user?.id;
-    if(!uid) return null;
-    record.authUid = uid;
-    try{ await ensureProfileForClient(supaSec, uid, profileAttrsForRecord(record)); }catch(e){}
-    try{ await supaSec.auth.signOut(); }catch(e){}
-    return uid;
-  }catch(e){
-    console.warn("auth create", e);
-    try{ await supaSec.auth.signOut(); }catch(_e){}
-    return null;
-  }
-}
-/* Password change via secondary client: sign in with the old password,
-   update it, then sign the secondary client out. */
-async function supaChangePassword(email, oldPw, newPw){
-  if(!supaSec || !cloudReady) return false;
-  try{
-    const { error } = await supaSec.auth.signInWithPassword({ email, password:deriveCloudPw(oldPw) });
-    if(error){ try{ await supaSec.auth.signOut(); }catch(_e){} return false; }
-    const { error: updErr } = await supaSec.auth.updateUser({ password:deriveCloudPw(newPw) });
-    try{ await supaSec.auth.signOut(); }catch(_e){}
-    return !updErr;
-  }catch(e){
-    console.warn("Supabase password change", e);
-    try{ await supaSec.auth.signOut(); }catch(_e){}
-    return false;
-  }
-}
-async function supaChangePasswordForSession(s, oldPw, newPw){
-  if(!cloudReady) return false;
-  let email = null;
-  if(s.role === "ADMIN")email = ADMIN_EMAIL;
-  else if(s.role === "MEMBER" && s.memberRecord)email = emailForMember(s.memberRecord);
-  else if(s.role === "MAKER" && s.memberRecord)email = emailForMaker(s.memberRecord);
-  if(!email) return false;
-  return supaChangePassword(email, oldPw, newPw);
-}
-
-/* ---------------- Supabase login flows ---------------- */
-async function supaAdminLogin(pw){
-  if(!supa) return false;
-  try{
-    const cpw = deriveCloudPw(pw);
-    let { data, error } = await supa.auth.signInWithPassword({ email:ADMIN_EMAIL, password:cpw });
-    if(error){
-      /* First-run bootstrap: create the admin Supabase Auth account. */
-      const s = await supa.auth.signUp({ email:ADMIN_EMAIL, password:cpw });
-      if(s.error){ console.warn("admin bootstrap", s.error); return false; }
-      data = s.data;
-    }
-    const uid = data?.user?.id;
-    if(!uid) return false;
-    await ensureProfileForClient(supa, uid, { role:"ADMIN", memberId:null, username:"admin", displayName:"Admin" });
-    return true;
-  }catch(e){ console.warn("Supabase admin login", e); return false; }
-}
-async function supaCredentialLogin(email, pw, record){
-  if(!supa) return false;
-  const cpw = deriveCloudPw(pw);
-  try{
-    let { data, error } = await supa.auth.signInWithPassword({ email, password:cpw });
-    if(error){
-      /* The Supabase Auth account may not exist yet — create it from the record's password. */
-      if(record && record.localPassword){
-        const u = await ensureAuthForRecord({ ...record });
-        if(u){
-          if(record.id) record.authUid = u;
-          ({ data, error } = await supa.auth.signInWithPassword({ email, password:cpw }));
-        }
-      }
-      if(error) return false;
-    }
-    const uid = data?.user?.id;
-    if(!uid) return false;
-    if(record){
-      record.authUid = uid;
-      try{ suppressCloudQueue = true; await put("members", record); suppressCloudQueue = false; }catch(e){}
-    }
-    await ensureProfileForClient(supa, uid, profileAttrsForRecord(record || {}));
-    return true;
-  }catch(e){ console.warn("Supabase credential login", e); return false; }
-}
-/* Online is authoritative for Member authentication: the member does not
-   have to be cached on this device yet. */
-async function supaMemberDirectLogin(uid, pw, localMember){
-  if(!supa || !cloudReady) return null;
-  try{
-    const { data, error } = await supa.from("members").select("*").or(`member_id.eq.${uid},mobile.eq.${uid}`).limit(1);
-    if(error || !data || !data[0]) return null;
-    const cloudMember = memberCloudToLocal(data[0]);
-    if(!cloudMember || cloudMember.status !== "active") return null;
-    const rec = (localMember && (localMember.localPassword || localMember.authUid))
-      ? { ...cloudMember, localPassword: localMember.localPassword, authUid: localMember.authUid || cloudMember.authUid }
-      : cloudMember;
-    const ok = await supaCredentialLogin(emailForMember(rec), pw, rec);
-    if(!ok) return null;
-    return { ...cloudMember, authUid: rec.authUid || cloudMember.authUid };
-  }catch(e){ console.warn("Supabase member direct login", e); return null; }
-}
-/* If the local session was created while offline, silently establish the
-   Supabase Auth session when the network is back. */
-async function establishCloudSession(){
-  if(!supa || !cloudReady || !session) return false;
-  try{
-    const cur = await supa.auth.getSession();
-    if(cur.data?.session) return true;
-    let email = null;
-    if(session.role === "ADMIN")email = ADMIN_EMAIL;
-    else if(session.role === "MEMBER")email = emailForMember({ memberId: session.memberId });
-    else if(session.role === "MAKER")email = emailForMaker({ username: session.username });
-    let pw = session.password || null;
-    if(!pw){
-      if(session.role === "ADMIN")pw = ((await all("settings")).find(x => x.key === "adminPassword")?.value) || "admin";
-      else if(session.memberRecord?.localPassword)pw = session.memberRecord.localPassword;
-    }
-    if(!email || !pw) return false;
-    let { data, error } = await supa.auth.signInWithPassword({ email, password:deriveCloudPw(pw) });
-    if(error){
-      if(session.role === "ADMIN"){
-        const s = await supa.auth.signUp({ email, password:deriveCloudPw(pw) });
-        if(s.error) return false;
-        data = s.data;
-      }else if(session.memberRecord?.localPassword){
-        await ensureAuthForRecord(session.memberRecord);
-        ({ data, error } = await supa.auth.signInWithPassword({ email, password:deriveCloudPw(pw) }));
-        if(error) return false;
-      }else return false;
-    }
-    const uid = data?.user?.id;
-    if(!uid) return false;
-    session.authUid = uid;
-    await ensureProfileForClient(supa, uid, profileAttrsForSession(session));
-    return true;
-  }catch(e){ console.warn("establishCloudSession", e); return false; }
-}
-/* Restore the app session from a persisted Supabase Auth session.
-   Role is read from the profiles table (fallback: members table). */
-async function restoreFromSupa(supaSession){
-  try{
-    const uid = supaSession.user?.id;
-    if(!uid) return false;
-    const prof = await fetchProfile(supa, uid);
-    const pr = prof?.role || "";
-    if(pr === "ADMIN"){
-      session = { username:"admin", role:"ADMIN", authUid:uid };
-    }else if(pr === "MAKER"){
-      let mk = null;
-      const localMs = await all("members");
-      mk = localMs.find(x => x.type === "maker" && x.authUid === uid);
-      if(!mk){
-        const { data } = await supa.from("members").select("*").eq("auth_uid", uid).limit(1);
-        if(data && data[0]) mk = memberCloudToLocal(data[0]);
-      }
-      if(!mk){ try{ await supa.auth.signOut(); }catch(e){} return false; }
-      session = { username:mk.username, role:"MAKER", makerId:mk.id, memberRecordId:mk.id, memberRecord:mk, authUid:uid };
-    }else{
-      let m = null;
-      const localMs = await all("members");
-      m = localMs.find(x => x.type !== "maker" && x.authUid === uid);
-      if(!m && prof?.member_id){
-        const { data } = await supa.from("members").select("*").eq("member_id", prof.member_id).limit(1);
-        if(data && data[0]) m = memberCloudToLocal(data[0]);
-      }
-      if(!m){
-        const { data } = await supa.from("members").select("*").eq("auth_uid", uid).limit(1);
-        if(data && data[0]) m = memberCloudToLocal(data[0]);
-      }
-      if(!m){ try{ await supa.auth.signOut(); }catch(e){} return false; }
-      session = { username:m.memberId, displayName:m.nameBn || m.nameEn || m.memberId, role:"MEMBER",
-                  memberId:m.memberId, memberRecordId:m.id, memberRecord:m, authUid:uid };
-    }
-    saveSession();
-    return true;
-  }catch(e){ console.warn("restoreFromSupa", e); return false; }
-}
-
-/* ---------------- Realtime (single channel, no duplicate listeners) ---------------- */
-function stopRealtime(){
-  if(realtimeChannel){
-    try{ supa.removeChannel(realtimeChannel); }catch(e){}
-    realtimeChannel = null;
-  }
-  rtStarted = false;
-}
-async function startRealtime(){
-  if(rtStarted || !supa || !cloudReady || !session) return;
-  rtStarted = true;
-  try{
-    const stores = role(session) === "MEMBER"
-      ? ["members","deposits","notifications","activityLogs"]
-      : ["members","deposits","notifications","activityLogs","settings"];
-    const ch = supa.channel("dhruvo-realtime");
-    for(const store of stores){
-      ch.on("postgres_changes", { event:"*", schema:"public", table:TABLE_MAP[store] }, async payload => {
-        try{
-          if(payload.eventType === "DELETE"){
-            const oldRow = payload.old || {};
-            if(!oldRow.id) return;
-            if(!rowMatchesSession(store, oldRow)) return;
-            const local = await one(store, oldRow.id);
-            if(local){
-              suppressCloudQueue = true;
-              try{ await del(store, oldRow.id); }finally{ suppressCloudQueue = false; }
-              scheduleRefresh();
-            }
-            return;
-          }
-          const row = payload.new || payload.old;
-          if(!row || !row.id) return;
-          if(!rowMatchesSession(store, row)) return;
-          const local = await one(store, row.id);
-          const remoteTime = ms(row.updated_at || row.created_at);
-          const localTime = local ? ms(local.updatedAt || local.createdAt) : 0;
-          if(!local || remoteTime >= localTime){
-            suppressCloudQueue = true;
-            try{ await mergeCloudRow(store, row); }finally{ suppressCloudQueue = false; }
-            scheduleRefresh();
-          }
-        }catch(e){ console.warn("Realtime listener", store, e); }
-      });
-    }
-    realtimeChannel = ch;
-    ch.subscribe(status => {
-      if(status && String(status) !== "SUBSCRIBED" && String(status).startsWith("CHANNEL")) console.warn("Realtime channel status", status);
-    });
-  }catch(e){
-    console.warn("Realtime start", e);
-    rtStarted = false;
-    realtimeChannel = null;
-  }
-}
-function scheduleRefresh(){
-  if(refreshTimer) return;
-  refreshTimer = setTimeout(() => { refreshTimer = null; refreshCurrentView(); }, 400);
-}
-
-/* ---------------- Bootstrap / merge / sync queue ---------------- */
-function startReconcileTimer(){
-  if(reconcileTimer) return;
-  reconcileTimer = setInterval(async () => {
-    if(!cloudReady || !online || !session) return;
-    try{ await cloudPullAll(); await syncQueue(); await refreshCurrentView(); }catch(e){ console.warn("Cloud reconcile", e); }
-  }, 10000);
-}
-function stopReconcileTimer(){
-  if(reconcileTimer){ clearInterval(reconcileTimer); reconcileTimer = null; }
-}
-async function mergeLocalToCloud(){
-  if(!supa || !cloudReady) return;
-  const storesToMerge = ["members","deposits","notifications","activityLogs","settings"];
-  for(const store of storesToMerge){
-    const rows = await all(store);
-    for(const row of rows){
-      if(store === "settings" && (row.key === "adminPassword" || row.key === "cloudMigrationComplete")) continue;
-      try{
-        const { data } = await supa.from(TABLE_MAP[store]).select("*").eq("id", row.id).maybeSingle();
-        const cloud = data && data[0];
-        const localTime = ms(row.updatedAt || row.createdAt);
-        const cloudTime = cloud ? ms(cloud.updated_at || cloud.created_at) : 0;
-        if(!cloud || localTime > cloudTime){
-          if(store === "members" && row.localPassword && !row.authUid){
-            const uid = await ensureAuthForRecord(row);
-            if(uid){ row.authUid = uid; row.updatedAt = Date.now(); suppressCloudQueue = true; try{ await put("members", row); }finally{ suppressCloudQueue = false; } }
-          }
-          await cloudWrite(store, row);
-        }else if(cloud && cloudTime >= localTime){
-          suppressCloudQueue = true;
-          try{ await mergeCloudRow(store, cloud); }finally{ suppressCloudQueue = false; }
-        }
-      }catch(e){ console.warn("cloud merge", store, row.id, e); }
-    }
-  }
-}
-async function bootstrapCloudSync(){
-  if(!cloudReady || !online || !session) return false;
-  try{
-    /* If the session was created offline, establish the Supabase session first. */
-    await establishCloudSession();
-    /* Always pull cloud first. This is the critical multi-device bootstrap. */
-    await cloudPullAll();
-    /* If cloud is empty but this device already has local data, migrate it. */
-    const cloudMembers = await cloudStoreCount("members");
-    const cloudDeposits = await cloudStoreCount("deposits");
-    const localMembers = (await all("members")).length;
-    const localDeposits = (await all("deposits")).length;
-    if(cloudMembers === 0 && cloudDeposits === 0 && (localMembers > 0 || localDeposits > 0)){
-      await mergeLocalToCloud();
-      await cloudPullAll();
-    }else{
-      /* Cloud already exists: merge only newer local records; never overwrite cloud with stale local data. */
-      await mergeLocalToCloud();
-      await cloudPullAll();
-    }
-    return true;
-  }catch(e){
-    console.warn("bootstrapCloudSync", e);
-    return false;
-  }
-}
-function migrateLocalToCloud(){ return bootstrapCloudSync(); }
-function cloudErrorBn(e){
-  const msg = String(e?.message || "");
-  if(/row-level security/i.test(msg)) return "Supabase RLS policy সমস্যা। একবার Supabase Dashboard → SQL Editor-এ setup.sql চালান। তারপর ডেটা নিজে থেকেই sync হবে।";
-  if(/network|fetch|timeout|failed to fetch/i.test(msg)) return "Internet connection পাওয়া যাচ্ছে না। আপনার ডেটা লোকালি সংরক্ষিত আছে।";
-  return "তথ্য সংরক্ষণ করা সম্ভব হয়নি। আপনার ডেটা লোকালি সংরক্ষিত আছে।";
-}
-async function syncQueue(){
-  if(!cloudReady || !online || !supa || syncBusy) return;
-  syncBusy = true;
-  try{
-    const q = await all("syncQueue");
-    for(const x of q.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))){
-      try{
-        x.status = "syncing"; await put("syncQueue", x);
-        const p = x.payload || {};
-        if(x.op === "changePassword"){
-          const cp = x.payload || {};
-          let email = null;
-          if(cp.role === "ADMIN")email = ADMIN_EMAIL;
-          else if(cp.role === "MEMBER")email = emailForMember({ memberId: cp.memberId });
-          else email = emailForMaker({ username: cp.username });
-          const changed = await supaChangePassword(email, cp.oldPassword, cp.newPassword);
-          if(!changed) throw new Error("Supabase authentication password update failed");
-        }else if(x.op === "createMember" || x.op === "updateMember"){
-          if(p && p.localPassword && !p.authUid){
-            const uid = await ensureAuthForRecord(p);
-            if(uid){ p.authUid = uid; p.updatedAt = Date.now(); suppressCloudQueue = true; try{ await put("members", p); }finally{ suppressCloudQueue = false; } }
-          }
-          await cloudWrite("members", p);
-        }else if(x.op === "createDeposit" || x.op === "updateDeposit"){
-          await cloudWrite("deposits", p);
-        }else if(x.op === "createActivityLog"){
-          await cloudWrite("activityLogs", { ...p, updatedAt: p.updatedAt || Date.now() });
-        }else if(x.op === "createNotification" || x.op === "updateNotification"){
-          await cloudWrite("notifications", p);
-        }else if(x.op === "deleteMember" || x.op === "deleteDeposit"){
-          const store = x.op === "deleteMember" ? "members" : "deposits";
-          await cloudDelete(store, p.id || p);
-        }else if(x.op === "deleteNotification"){
-          await cloudDelete("notifications", p.id || p);
-        }else if(x.op === "updateSettings"){
-          await cloudWrite("settings", p);
-        }
-        await del("syncQueue", x.id);
-      }catch(err){
-        x.status = "failed"; x.lastError = String(err?.message || err); x.retryAt = Date.now() + 5000;
-        try{ await put("syncQueue", x); }catch(_e){}
-        if(!x.errorNotified && typeof showAlertPopup === "function"){
-          x.errorNotified = true;
-          try{ await put("syncQueue", x); }catch(_e){}
-          showAlertPopup("Cloud ডেটা sync করা যায়নি। " + cloudErrorBn(err));
-        }
-      }
-    }
-  }finally{ syncBusy = false; }
-}
-async function cloudPut(store, record){
-  await put(store, record);
-  await queue(store === "members" ? "updateMember" :
-              store === "deposits" ? "updateDeposit" :
-              store === "notifications" ? (record.type ? "createNotification" : "updateNotification") :
-              store === "activityLogs" ? "createActivityLog" : "updateSettings", record);
   if(cloudReady) syncQueue();
 }
-async function cloudDeleteWrap(store, recordId){
-  await del(store, recordId);
-  await queue(store === "members" ? "deleteMember" : "deleteDeposit", { id: recordId });
-  if(cloudReady) syncQueue();
+
+/* ---------------- Theme: Light / Dark (AMOLED full-black) / Auto ---------------- */
+function getSavedTheme(){ try{ const t = localStorage.getItem("dhruvoTheme"); return (t === "light" || t === "dark" || t === "auto") ? t : "auto"; }catch(e){ return "auto"; } }
+function applyTheme(){
+  const t = getSavedTheme();
+  const mq = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)")) || null;
+  const dark = t === "dark" || (t === "auto" && mq && mq.matches);
+  document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+  try{ document.documentElement.style.colorScheme = dark ? "dark" : "light"; }catch(e){}
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if(meta) meta.setAttribute("content", dark ? "#000000" : "#e9f7ef");
+  const btn = document.getElementById("themeToggleBtn");
+  if(btn){ btn.textContent = dark ? "☀️" : "🌙"; btn.title = "Theme: " + (dark ? "dark" : "light") + " (tap to change)"; }
 }
+function setTheme(t){ try{ localStorage.setItem("dhruvoTheme", t); }catch(e){} applyTheme(); }
+function cycleTheme(){
+  const t = getSavedTheme();
+  const next = t === "auto" ? "light" : (t === "light" ? "dark" : "auto");
+  setTheme(next);
+  if(session) refreshCurrentView();
+}
+function wireThemeBtn(){ const b = document.getElementById("themeToggleBtn"); if(b) b.onclick = cycleTheme; applyTheme(); }
+function themeBtnHtml(){ return `<button id="themeToggleBtn" class="neutral theme-btn" type="button" title="Theme (Light/Dark)" style="position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:12px;z-index:10;box-shadow:var(--shadow)">🌙</button>`; }
+if(window.matchMedia && typeof window.matchMedia("(prefers-color-scheme: dark)").addEventListener === "function"){
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if(getSavedTheme() === "auto") applyTheme(); });
+}
+
+/* Navigation icons for the Top/Bottom Tab Bar */
+const NAV_ICONS = { home:"🏠", members:"👥", deposit:"💰", history:"📜", reports:"📊", notifications:"🔔", profile:"👤", admin:"🛠️", dataManage:"🗂️", backup:"💾", settings:"⚙️", maker:"🧑‍💼", activity:"📝" };
 
 /* Dhruvo Sangsad — application core. No framework. */
 const DB_NAME = "DhruvoSangsadDB", DB_VER = 1;
 const stores = ["members","deposits","notifications","activityLogs","settings","syncQueue"];
-let db, session = null;
-function saveSession(){ try{ const safe = session ? { ...session, password:undefined, memberRecord:undefined } : session; sessionStorage.setItem("dhruvoSession", JSON.stringify(safe)); }catch(e){} }
-function loadSession(){ try{ const x = sessionStorage.getItem("dhruvoSession"); return x ? JSON.parse(x) : null; }catch(e){ return null; } }
-
-const $ = s => document.querySelector(s);
-const today = () => { const d = new Date(); return String(d.getDate()).padStart(2,"0") + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + d.getFullYear(); };
-const isoToday = () => new Date().toISOString().slice(0,10);
-const money = n => Number(n||0).toLocaleString("en-BD",{minimumFractionDigits:2,maximumFractionDigits:2});
-const id = () => crypto.randomUUID ? crypto.randomUUID() : Date.now() + "-" + Math.random().toString(36).slice(2);
-const norm = s => String(s||"").trim().toLowerCase();
-const role = (u) => u?.role || "";
-
-function openDB(){ return new Promise((res, rej) => {
-  const r = indexedDB.open(DB_NAME, DB_VER);
-  r.onupgradeneeded = e => {
-    const d = e.target.result;
-    stores.forEach(s => {
-      if(!d.objectStoreNames.contains(s)){
-        const o = d.createObjectStore(s, { keyPath:"id" });
-        if(s === "members"){ o.createIndex("mobile","mobile",{unique:false}); o.createIndex("memberId","memberId",{unique:false}); }
-        if(s === "deposits"){ o.createIndex("memberId","memberId",{unique:false}); o.createIndex("date","date",{unique:false}); }
-      }
-    });
-  };
-  r.onsuccess = () => { db = r.result; res(db); };
-  r.onerror = () => rej(r.error);
-}); }
-function put(store, v){ return new Promise((res, rej) => {
-  const t = db.transaction(store, "readwrite");
-  t.objectStore(store).put(v);
-  t.oncomplete = async () => {
-    try{
-      if(!suppressCloudQueue && v && v.id && ["notifications","settings"].includes(store)){
-        await queue(store === "notifications" ? (v.type ? "createNotification" : "updateNotification") : "updateSettings", v);
-        if(cloudReady) syncQueue();
-      }
-    }catch(e){ console.warn("cloud queue", e); }
-    res(v);
-  };
-  t.onerror = () => rej(t.error);
-}); }
-function del(store, k){ return new Promise((res, rej) => {
-  const t = db.transaction(store, "readwrite");
-  t.objectStore(store).delete(k);
-  t.oncomplete = async () => {
-    try{
-      if(!suppressCloudQueue && ["members","deposits","notifications","settings"].includes(store)){
-        await queue(store === "members" ? "deleteMember" : store === "deposits" ? "deleteDeposit" : "deleteNotification", { id:k });
-        if(cloudReady) syncQueue();
-      }
-    }catch(e){ console.warn("cloud delete queue", e); }
-    res();
-  };
-  t.onerror = () => rej(t.error);
-}); }
-function all(store){ return new Promise((res, rej) => { const r = db.transaction(store).objectStore(store).getAll(); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
-async function one(store, k){ return new Promise((res, rej) => { const r = db.transaction(store).objectStore(store).get(k); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
-async function queue(op, payload){ await put("syncQueue", { id:id(), createdAt:Date.now(), op, payload, status:"pending" }); }
-
-function normalizeDigits(v){
-  return String(v || "")
-    .replace(/[০-৯]/g, c => String("০১২৩৪৫৬৭৮৯".indexOf(c)))
-    .replace(/[٠-٩]/g, c => String("٠١٢٣٤٥٦٧٨٩".indexOf(c)));
-}
-
-function toast(s){ let x = document.createElement("div"); x.className = "toast"; x.textContent = s; document.body.appendChild(x); setTimeout(() => x.remove(), 2500); }
-
-/* Custom Popup Modal for Errors & Success */
-function showAlertPopup(message, isSuccess = false, onOkCallback = null){
-  const old = document.getElementById("customAlertModal"); if(old) old.remove();
-  const modal = document.createElement("div");
-  modal.id = "customAlertModal";
   modal.className = "alert-modal";
   modal.innerHTML = `
   <div class="alert-card">
     <h3 style="${isSuccess ? 'color:#5eaa7b;' : ''}">${isSuccess ? 'সফল হয়েছে' : 'সতর্কতা / ভুল'}</h3>
+    <h3 style="${isSuccess ? 'color:var(--accent);' : ''}">${isSuccess ? 'সফল হয়েছে' : 'সতর্কতা / ভুল'}</h3>
     <p>${message}</p>
     <button class="primary" id="closeAlertBtn" style="width:100%">ঠিক আছে</button>
   </div>`;
-  document.body.appendChild(modal);
-  const closeBtn = document.getElementById("closeAlertBtn");
-  closeBtn.onclick = () => { modal.remove(); if(onOkCallback) onOkCallback(); };
-  modal.onclick = (e) => { if(e.target === modal){ modal.remove(); if(onOkCallback) onOkCallback(); } };
-}
-
-function fmtInputDate(v){ if(!v) return ""; if(/^\d{2}-\d{2}-\d{4}$/.test(v)) return v; const [y,m,d] = v.split("-"); return `${d}-${m}-${y}`; }
-function parseDMY(s){ const [d,m,y] = String(s).split("-").map(Number); return new Date(y, m-1, d); }
-function calc(member, deposits){
-  let total = deposits.filter(x => x.memberId === member.memberId && x.status === "approved").reduce((a,x) => a + Number(x.amount||0), 0);
-  const start = new Date(parseDMY(member.approvedAt || today()));
-  const now = new Date();
-  let months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth()) + 1;
-  if(months < 0) months = 0;
-  let required = Math.max(0, months * Number(member.monthlyInstallment||0));
-  let due = Math.max(0, required - total), advance = Math.max(0, total - required);
-  return { total, due, advance, required };
-}
-async function log(action, details = ""){
-  if(!session) return;
-  const rec = { id:id(), user:session.username || session.memberId, role:session.role, action, details, date:today(), time:new Date().toLocaleTimeString(), createdAt:Date.now(), updatedAt:Date.now() };
-  await put("activityLogs", rec);
-  await queue("createActivityLog", rec);
-  if(cloudReady) syncQueue();
 }
 
 function renderLogin(){
   document.body.innerHTML = `<div class="login"><div class="login-card"><div class="brand">ধ্রুব সংসদ</div><div class="sub">Offline-first Member & Deposit Management</div><div id="dbLoginStatus" class="db-status ${cloudReady ? "db-online" : "db-connecting"}">${cloudReady ? "🟢 Database Connected" : "⚪ Database Connecting..."}</div><form id="loginForm"><div class="field"><label>User ID / Mobile Number</label><input id="uid" required autocomplete="username"></div><div class="field"><label>Password</label><input id="pw" type="password" required autocomplete="current-password"></div><button class="primary" style="width:100%">Login / লগইন</button></form><button class="neutral" id="reg" style="width:100%;margin-top:8px">Member Registration</button><button class="neutral" id="forgot" style="width:100%;margin-top:8px">Forgot Password</button><div class="notice" style="margin-top:12px">First installation bootstrap: <b>admin / admin</b>. Change it immediately in Admin Setup.</div></div></div>`;
+  document.body.innerHTML = `<div class="login"><div class="login-card"><div class="brand">ধ্রুব সংসদ</div><div class="sub">Offline-first Member & Deposit Management</div><div id="dbLoginStatus" class="db-status ${cloudReady ? "db-online" : "db-connecting"}">${cloudReady ? "🟢 Database Connected" : "⚪ Database Connecting..."}</div><form id="loginForm"><div class="field"><label>User ID / Mobile Number</label><input id="uid" required autocomplete="username"></div><div class="field"><label>Password</label><input id="pw" type="password" required autocomplete="current-password"></div><button class="primary" style="width:100%">Login / লগইন</button></form><button class="neutral" id="reg" style="width:100%;margin-top:8px">Member Registration</button><button class="neutral" id="forgot" style="width:100%;margin-top:8px">Forgot Password</button><div class="notice" style="margin-top:12px">First installation bootstrap: <b>admin / admin</b>. Change it immediately in Admin Setup.</div></div>${themeBtnHtml()}</div>`;
   $("#loginForm").onsubmit = async e => { e.preventDefault(); await login($("#uid").value, $("#pw").value); };
   $("#reg").onclick = () => renderRegistration();
   $("#forgot").onclick = () => renderForgotPassword();
+  wireThemeBtn();
 }
 
 function renderForgotPassword(){
   document.body.innerHTML = `<div class="login"><div class="login-card"><div class="brand">Forgot Password</div><div class="sub">User ID / Mobile Number দিয়ে password reset link পাঠানো হবে</div><form id="ff"><div class="field"><label>User ID / Mobile Number</label><input id="fuid" required autocomplete="username"></div><button class="primary" style="width:100%">Send Reset Link</button></form><button class="neutral" id="fback" style="width:100%;margin-top:8px">Back to Login</button></div></div>`;
+  document.body.innerHTML = `<div class="login"><div class="login-card"><div class="brand">Forgot Password</div><div class="sub">User ID / Mobile Number দিয়ে password reset link পাঠানো হবে</div><form id="ff"><div class="field"><label>User ID / Mobile Number</label><input id="fuid" required autocomplete="username"></div><button class="primary" style="width:100%">Send Reset Link</button></form><button class="neutral" id="fback" style="width:100%;margin-top:8px">Back to Login</button></div>${themeBtnHtml()}</div>`;
   $("#fback").onclick = renderLogin;
+  wireThemeBtn();
   $("#ff").onsubmit = async e => {
     e.preventDefault();
     const uidV = normalizeDigits($("#fuid").value.trim());
-    if(!uidV) return showAlertPopup("User ID / Mobile Number দিন।");
-    if(!cloudReady) return showAlertPopup("Internet connection পাওয়া যাচ্ছে না। Password reset-এর জন্য online থাকতে হবে।");
-    const email = await resolveEmailForId(uidV);
-    if(!email) return showAlertPopup("এই ID-তে কোনো account পাওয়া যায়নি।");
-    try{
-      const { error } = await supa.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + window.location.pathname });
-      if(error) return showAlertPopup("Password reset link পাঠানো যায়নি। আবার চেষ্টা করুন।");
-      showAlertPopup("Password reset link আপনার account-এর email-এ পাঠানো হয়েছে। Email-এ গিয়ে নতুন password সেট করুন।", true);
-      renderLogin();
-    }catch(err){
-      console.warn("resetPassword", err);
-      showAlertPopup("Password reset link পাঠানো যায়নি। আবার চেষ্টা করুন।");
-    }
-  };
-}
-async function resolveEmailForId(uidV){
-  if(uidV === "admin") return ADMIN_EMAIL;
-  const members = await all("members");
-  const mk = members.find(x => x.type === "maker" && x.username === uidV);
-  if(mk) return emailForMaker(mk);
-  const m = members.find(x => x.mobile === uidV || x.memberId === uidV);
-  if(m) return emailForMember(m);
-  if(!cloudReady) return null;
-  try{
-    const { data } = await supa.from("members").select("member_id,mobile,username,type").or(`member_id.eq.${uidV},mobile.eq.${uidV},username.eq.${uidV}`).limit(1);
-    if(data && data[0]){ const r = data[0]; return r.type === "maker" ? emailForMaker(r) : emailForMember(r); }
-  }catch(e){ console.warn("resolveEmailForId", e); }
-  return null;
-}
-
-/* Supabase password-recovery link opens the app with ?type=recovery in the URL.
-   supabase-js (detectSessionInUrl) already exchanged the token for a session. */
-function showRecoveryForm(){
-  renderLogin();
-  const old = document.getElementById("recoveryModal"); if(old) old.remove();
-  const modal = document.createElement("div");
-  modal.id = "recoveryModal"; modal.className = "modal";
-  modal.innerHTML = `
-  <div class="modal-card">
-    <div class="section-title">Set New Password</div>
-    <div class="notice">Email-এ পাওয়া link থেকে আপনি এখানে এসেছেন। নতুন password সেট করুন।</div>
-    <div class="field"><label>New Password</label><div class="password-field-wrap"><input id="recPw" type="password" autocomplete="new-password"><button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('recPw', this)">👁</button></div></div>
-    <div class="field"><label>Confirm New Password</label><div class="password-field-wrap"><input id="recPw2" type="password" autocomplete="new-password"><button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('recPw2', this)">👁</button></div></div>
-    <div class="actions"><button class="primary" id="recSave">Save New Password</button><button class="neutral" id="recCancel">Cancel</button></div>
-  </div>`;
-  document.body.appendChild(modal);
-  $("#recCancel").onclick = async () => {
-    try{ await supa.auth.signOut(); }catch(e){}
-    window.history.replaceState && window.history.replaceState({}, document.title, window.location.pathname);
-    modal.remove(); renderLogin();
-  };
-  $("#recSave").onclick = async () => {
-    const npw = $("#recPw").value, cpw = $("#recPw2").value;
-    if(npw.length < 4) return showAlertPopup("নতুন পাসওয়ার্ড কমপক্ষে ৪ অক্ষরের হতে হবে।");
-    if(npw !== cpw) return showAlertPopup("New Password এবং Confirm Password মিলছে না।");
-    try{
-      const { error } = await supa.auth.updateUser({ password: npw });
-      if(error) throw error;
-      /* best effort: keep the local cache password in sync */
-      try{
-        const { data: u } = await supa.auth.getUser();
-        const uidv = u?.user?.id;
-        if(uidv){
-          const members = await all("members");
-          const m = members.find(x => x.authUid === uidv);
-          if(m){ m.localPassword = npw; m.updatedAt = Date.now(); await put("members", m); await queue("updateMember", m); }
-        }
-      }catch(e){}
-      try{ await supa.auth.signOut(); }catch(e){}
-      window.history.replaceState && window.history.replaceState({}, document.title, window.location.pathname);
-      modal.remove();
-      showAlertPopup("Password পরিবর্তন সফল হয়েছে! এখন নতুন password দিয়ে লগইন করুন।", true);
-    }catch(err){
-      console.warn("recovery update", err);
-      showAlertPopup("Password আপডেট করা যায়নি। আবার চেষ্টা করুন।");
-    }
-  };
-}
-
-async function login(uid, pw){
-  uid = normalizeDigits(uid.trim()); pw = String(pw || "");
-  const members = await all("members");
-  let m = members.find(x => x.mobile === uid || x.memberId === uid);
-  if(uid === "admin"){
-    const settings = await all("settings");
-    const saved = settings.find(x => x.key === "adminPassword")?.value || "admin";
-    if(cloudReady){
-      const ok = await supaAdminLogin(pw);
-      if(!ok) return showAlertPopup("Login ব্যর্থ হয়েছে। Internet connection ও Supabase authentication পরীক্ষা করুন।");
-    }else{
-      if(pw !== saved) return showAlertPopup("User ID বা Password সঠিক নয়। অনুগ্রহ করে সঠিক তথ্য দিয়ে পুনরায় চেষ্টা করুন।");
-    }
-    session = { username:"admin", role:"ADMIN", first:true, password:pw };
-    saveSession();
-    await log("Login/Logout Activity", "Admin Logged In");
-    /* IMPORTANT: render the application before any cloud bootstrap so
-       network problems can never block the Top Tab Bar. */
-    renderApp();
-    if(cloudReady) startCloudAfterLogin("ADMIN");
-    const event = new CustomEvent("loginSuccess");
-    window.dispatchEvent(event);
-    return;
-  }
-  let maker = members.find(x => x.type === "maker" && x.username === uid && x.status === "active");
-  if(!maker && cloudReady){
-    try{
-      const { data } = await supa.from("members").select("*").eq("username", uid).limit(1);
-      if(data && data[0]){
-        const cm = memberCloudToLocal(data[0]);
-        maker = cm;
-        suppressCloudQueue = true;
-        try{ await mergeCloudRow("members", data[0]); }finally{ suppressCloudQueue = false; }
-      }
-    }catch(e){ console.warn("Maker cloud lookup", e); }
-  }
-  if(maker && maker.type === "maker" && maker.status === "active"){
-    if(!cloudReady && maker.localPassword !== pw) return showAlertPopup("User ID বা Password সঠিক নয়।");
-    if(cloudReady){
-      const ok = await supaCredentialLogin(emailForMaker(maker), pw, maker);
-      if(!ok) return showAlertPopup("Login ব্যর্থ হয়েছে। Password সঠিক কিনা পরীক্ষা করুন।");
-    }
-    session = { username:maker.username, role:"MAKER", makerId:maker.id, memberRecordId:maker.id, memberRecord:maker, password:pw, authUid:maker.authUid || null };
-    saveSession();
-    await log("Login/Logout Activity", "Maker Logged In");
-    renderApp();
-    if(cloudReady) startCloudAfterLogin("MAKER");
-    const event = new CustomEvent("loginSuccess");
-    window.dispatchEvent(event);
-    return;
-  }
-  if(cloudReady){
-    /* Online is authoritative for Member authentication. */
-    const cloudMember = await supaMemberDirectLogin(uid, pw, m);
-    if(cloudMember){
-      m = cloudMember;
-      suppressCloudQueue = true;
-      try{ await put("members", m); }finally{ suppressCloudQueue = false; }
-      session = { username:m.memberId, displayName:m.nameBn || m.nameEn || m.memberId, role:"MEMBER", memberId:m.memberId, memberRecordId:m.id, memberRecord:m, password:pw, authUid:m.authUid || null };
-      saveSession();
-      await log("Login/Logout Activity", `Member ${m.memberId} Logged In`);
-      renderApp();
-      startCloudAfterLogin("MEMBER");
-      const event = new CustomEvent("loginSuccess");
-      window.dispatchEvent(event);
-      return;
-    }
-  }
-  if(m && m.status === "active"){
-    if(!cloudReady && m.localPassword !== pw) return showAlertPopup("User ID বা Password সঠিক নয়।");
-    if(cloudReady){
-      const ok = await supaCredentialLogin(emailForMember(m), pw, m);
-      if(!ok) return showAlertPopup("Login ব্যর্থ হয়েছে। Password সঠিক কিনা এবং internet connection পরীক্ষা করুন।");
-    }
-    session = { username:m.memberId, displayName:m.nameBn || m.nameEn || m.memberId, role:"MEMBER", memberId:m.memberId, memberRecordId:m.id, memberRecord:m, password:pw, authUid:m.authUid || null };
-    saveSession();
-    await log("Login/Logout Activity", `Member ${m.memberId} Logged In`);
-    renderApp();
-    if(cloudReady) startCloudAfterLogin("MEMBER");
-    const event = new CustomEvent("loginSuccess");
-    window.dispatchEvent(event);
-    return;
-  }
-  showAlertPopup("User ID বা Password সঠিক নয়। অনুগ্রহ করে সঠিক তথ্য দিয়ে পুনরায় চেষ্টা করুন।");
-}
-
-let currentView = "home";
-
-/* The Activity Log is rendered inside Settings; this route is kept for
-   compatibility with the navigation map. */
-async function activity(){ await settings(); }
-
-async function refreshCurrentView(){
-  try{
-    if(!session) return;
-    const fn = { home:dashboard, members:memberList, profile:profile, deposit:depositForm, history:history, reports:reports, notifications:notifications, activity:activity, admin:adminPanel, dataManage:dataManagement, maker:makerPanel, backup:backup, settings:settings }[currentView];
-    if(typeof fn === "function") await fn();
-  }catch(e){ console.warn("UI refresh after cloud update", e); }
-}
-
-async function startCloudAfterLogin(loginRole){
-  try{
-    if(!cloudReady || !session) return;
-    await bootstrapCloudSync();
-    await startRealtime();
-    await syncQueue();
-    /* Cloud bootstrap may have changed the data shown on the first screen. */
-    await refreshCurrentView();
-    startReconcileTimer();
-  }catch(e){
-    console.warn("Cloud startup after login", e);
-    updateDbStatus(false);
-  }
-}
-
-/* Navigation Configuration for Top Tab Bar (unchanged) */
-function navTabs(){
-  let r = role(session);
-  let a = [["home","Dashboard"],["members","Members"],["deposit","Deposit"],["history","History"],["reports","Reports"],["notifications","Notifications"]];
-  if(r === "MEMBER"){
-    a = [["home","Dashboard"],["profile","My Profile"],["deposit","Deposit"],["history","My History"],["reports","My Statement"],["settings","Settings"]];
-  } else if(r === "ADMIN"){
-    a.push(["admin","Admin Panel"],["dataManage","Data Management"],["backup","Backup & Restore"],["settings","Settings"]);
-  } else if(r === "MAKER"){
-    a.push(["maker","Maker Panel"],["settings","Settings"]);
-  } else {
-    a.push(["settings","Settings"]);
-  }
-  return a;
-}
-
-function renderApp(){
-  saveSession();
-  const tabs = navTabs();
-  document.body.innerHTML = `
   <div class="topbar">
     <div><strong>ধ্রুব সংসদ</strong></div>
     <div class="userbox">
+      <button id="themeToggleBtn" class="neutral theme-btn" type="button" title="Theme (Light/Dark)">🌙</button>
       <span>${session.role === "MEMBER" ? `${session.displayName} · ${session.memberId}` : `${session.username} · ${session.role}`}</span>
       <button id="logout" class="danger" type="button">Logout</button>
     </div>
   </div>
   <div class="top-tab-bar" id="topTabBar">
     ${tabs.map(([k,t]) => `<button type="button" class="top-tab-btn" data-nav="${k}">${t}</button>`).join("")}
+    ${tabs.map(([k,t]) => `<button type="button" class="top-tab-btn" data-nav="${k}"><span class="tab-icon">${NAV_ICONS[k] || "•"}</span><span class="tab-label">${t}</span></button>`).join("")}
   </div>
   <div class="layout"><main class="main" id="main"></main></div>`;
+
+  const themeBtn = document.getElementById("themeToggleBtn");
+  if(themeBtn) themeBtn.onclick = cycleTheme;
+  applyTheme();
 
   /* Attach navigation BEFORE any cloud/realtime operation. */
   const bar = document.getElementById("topTabBar");
   if(bar){
-    bar.addEventListener("click", async e => {
-      const b = e.target.closest("[data-nav]");
-      if(!b || !bar.contains(b)) return;
-      e.preventDefault();
-      const key = b.dataset.nav;
-      document.querySelectorAll("[data-nav]").forEach(btn => btn.classList.remove("active-tab"));
-      b.classList.add("active-tab");
-      await route(key);
-    });
-  }
-
-  const logoutBtn = $("#logout");
-  if(logoutBtn) logoutBtn.onclick = async () => {
-    try{ await log("Login/Logout Activity", `User Logged Out: ${session.username || session.memberId}`); }catch(e){}
-    stopRealtime();
-    stopReconcileTimer();
-    logoutInProgress = true;
-    try{ if(supa) await supa.auth.signOut(); }catch(e){}
-    try{ if(supaSec) await supaSec.auth.signOut(); }catch(e){}
-    logoutInProgress = false;
-    session = null;
-    try{ sessionStorage.removeItem("dhruvoSession"); }catch(e){}
-    renderLogin();
-    updateDbStatus(lastDbState);
-  };
-
-  addDbStatusToTopbar();
-  const defaultTabBtn = document.querySelector('[data-nav="home"]') || document.querySelector('[data-nav]');
-  if(defaultTabBtn){
-    defaultTabBtn.classList.add("active-tab");
-    route(defaultTabBtn.dataset.nav);
-  }
-  /* Realtime setup is deliberately deferred so it can never block tab wiring. */
-  setTimeout(() => { try{ startRealtime(); }catch(e){ console.warn("Realtime start", e); } }, 0);
   if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 }
 
+const MEMBER_ALLOWED_ROUTES = ["home","profile","deposit","history","reports","settings"];
 async function route(k){
   currentView = k || "home";
+  if(role(session) === "MEMBER" && !MEMBER_ALLOWED_ROUTES.includes(currentView)) currentView = "home";
   const fn = { home:dashboard, members:memberList, profile:profile, deposit:depositForm, history:history, reports:reports, notifications:notifications, activity:activity, admin:adminPanel, dataManage:dataManagement, maker:makerPanel, backup:backup, settings:settings }[currentView];
   if(typeof fn !== "function") return;
   try{
-    await fn();
   }catch(e){
     console.error("Navigation error:", currentView, e);
     const main = document.getElementById("main");
     if(main) main.innerHTML = `<div class="notice" style="background:#fff0f0;border-color:#f1c4c4;color:#8b3030"><b>এই পেইজটি লোড করা যায়নি।</b><br>${String(e?.message || e)}</div>`;
+    if(main) main.innerHTML = `<div class="notice notice-error"><b>এই পেইজটি লোড করা যায়নি।</b><br>${String(e?.message || e)}</div>`;
   }
 }
 
-async function dashboard(){
-  const ms = await all("members"), ds = await all("deposits");
-
-  if(role(session) === "MEMBER"){
-    const m = ms.find(x => x.memberId === session.memberId);
-    if(!m){ $("#main").innerHTML = `<div class="notice">Member তথ্য পাওয়া যায়নি।</div>`; return; }
-
-    const approved = ds.filter(x => x.memberId === m.memberId && x.status === "approved");
-    const normalDeposits = approved.filter(x => !["উত্তোলন","Withdrawal","withdrawal"].includes(x.type));
-    const withdrawals = approved.filter(x => ["উত্তোলন","Withdrawal","withdrawal"].includes(x.type));
-    const totalDeposit = normalDeposits.reduce((a,x) => a + Number(x.amount||0), 0);
-    const totalWithdrawal = withdrawals.reduce((a,x) => a + Number(x.amount||0), 0);
-    const netBalance = totalDeposit - totalWithdrawal;
-    const lastDeposit = [...normalDeposits].sort((a,b) => (b.submittedAt||0) - (a.submittedAt||0))[0];
-
-    const latest = [...approved].sort((a,b) => (b.submittedAt||0) - (a.submittedAt||0)).slice(0,5);
-
-    $("#main").innerHTML = `
-    <div class="section-title">Dashboard</div>
-    <div class="card" style="margin-bottom:8px">
-      <div style="font-size:17px;font-weight:700">${m.nameBn || m.nameEn}</div>
-      <div class="muted">Member ID: ${m.memberId} · Mobile: ${m.mobile || "—"}</div>
-      <span class="badge ${m.status}" style="margin-top:5px">${m.status}</span>
-    </div>
-
-    <div class="section-title">Account Summary</div>
-    <div class="grid">
-      <div class="card"><div class="muted">সর্বশেষ জমার তারিখ</div><div class="metric">${lastDeposit?.date || "—"}</div></div>
-      <div class="card"><div class="muted">সর্বশেষ জমার পরিমাণ</div><div class="metric">৳ ${money(lastDeposit?.amount||0)}</div></div>
-      <div class="card"><div class="muted">মোট জমা</div><div class="metric">৳ ${money(totalDeposit)}</div></div>
-      <div class="card"><div class="muted">মোট উত্তোলন</div><div class="metric">৳ ${money(totalWithdrawal)}</div></div>
-      <div class="card"><div class="muted">বর্তমান ব্যালেন্স</div><div class="metric">৳ ${money(netBalance)}</div></div>
-    </div>
-
-    <div class="section-title" style="margin-top:10px">সর্বশেষ লেনদেন</div>
-    <div class="table-wrap">
-      <table class="table">
-       <thead><tr><th>তারিখ</th><th>ধরন</th><th>বিবরণ</th><th>পরিমাণ</th><th>লেনদেনের মাধ্যম</th><th>স্ট্যাটাস</th></tr></thead>
-       <tbody>${latest.map(d => `
-        <tr>
-          <td>${d.date || "—"}</td>
-          <td>${d.type || "—"}</td>
-          <td>${d.description || "—"}</td>
-          <td>৳ ${money(d.amount)}</td>
-          <td>${d.paymentMethod || "—"}</td>
-          <td>${d.status || "—"}</td>
-        </tr>`).join("") || `<tr><td colspan="6">কোনো approved transaction নেই</td></tr>`}</tbody>
-      </table>
-    </div>`;
-    return;
-  }
-
-  const approved = ds.filter(x => x.status === "approved");
-  let total = approved.reduce((a,x) => a + Number(x.amount||0), 0), due = 0, adv = 0;
-  for(const m of ms.filter(x => x.status === "active")){ const c = calc(m, ds); due += c.due; adv += c.advance; }
-  $("#main").innerHTML = `<div class="section-title">Dashboard</div><div class="grid">
-  <div class="card">👥 Total Members<div class="metric">${ms.filter(x => x.type !== "maker").length}</div></div>
-  <div class="card">💰 Total Deposit<div class="metric">৳ ${money(total)}</div></div>
-  <div class="card">⚠️ Total Due<div class="metric">৳ ${money(due)}</div></div>
-  <div class="card">⬆️ Total Advance<div class="metric">৳ ${money(adv)}</div></div>
-  <div class="card">⏳ Pending Approval<div class="metric">${ms.filter(x => x.status === "pending").length + ds.filter(x => x.status === "pending").length}</div></div>
-  <div class="card">📅 Today's Collection<div class="metric">৳ ${money(approved.filter(x => x.date === today()).reduce((a,x) => a + Number(x.amount||0), 0))}</div></div>
-  </div>`;
-}
-
-async function renderRegistration(){
   document.body.innerHTML = `<div class="login"><div class="login-card" style="max-width:720px"><div class="brand">Member Registration</div><form id="rf"><div class="form-grid">
 ${[
 ["nameBn","Name (Bangla) *"],["nameEn","Name (English) *"],["fatherBn","Father's Name (Bangla)"],["fatherEn","Father's Name (English)"],["motherBn","Mother's Name (Bangla)"],["motherEn","Mother's Name (English)"],["mobile","Mobile Number *"],["whatsapp","WhatsApp Number *"],["email","Email ID"],["nid","NID Number"],["dob","Date of Birth (DD-MM-YYYY)"],["profession","Profession"],["address","Address"],["monthlyInstallment","Monthly Installment *"],["password","Password *"]
 ].map(([i,l]) => `<div class="field"><label>${l}</label><input id="${i}" ${i === "password" ? "type=password" : ""} ${i === "monthlyInstallment" ? "type=number min=0 step=0.01" : ""} required></div>`).join("")}</div><div class="actions"><button class="primary">Register</button><button type="button" class="neutral" id="back">Back to Login</button></div></form></div></div>`;
+].map(([i,l]) => `<div class="field"><label>${l}</label><input id="${i}" ${i === "password" ? "type=password" : ""} ${i === "monthlyInstallment" ? "type=number min=0 step=0.01" : ""} required></div>`).join("")}</div><div class="actions"><button class="primary">Register</button><button type="button" class="neutral" id="back">Back to Login</button></div></form></div>${themeBtnHtml()}</div>`;
   $("#back").onclick = renderLogin;
+  wireThemeBtn();
   $("#rf").onsubmit = async e => {
     e.preventDefault();
     const g = i => $("#" + i).value.trim();
-    let mobile = normalizeDigits(g("mobile")), mid = mobile.slice(-6);
-    if(mobile.length < 6) return showAlertPopup("সঠিক Mobile Number দিন।");
-    let ms = await all("members");
-    if(ms.some(x => x.memberId === mid)) return showAlertPopup("এই Member ID ইতোমধ্যে ব্যবহৃত হয়েছে।");
-    if(ms.some(x => x.mobile === mobile)) return showAlertPopup("এই মোবাইল নম্বর ইতোমধ্যে একজন সদস্যের জন্য ব্যবহৃত হয়েছে।");
-    if(ms.some(x => x.whatsapp === g("whatsapp"))) return showAlertPopup("এই WhatsApp নম্বর ইতোমধ্যে ব্যবহৃত হয়েছে।");
-    if(g("email") && ms.some(x => norm(x.email) === norm(g("email")))) return showAlertPopup("এই Email ID ইতোমধ্যে ব্যবহৃত হয়েছে।");
-    if(cloudReady){
-      try{
-        const chk = await supa.from("members").select("member_id,mobile,whatsapp,email").or(`member_id.eq.${mid},mobile.eq.${mobile}`).limit(4);
-        if(chk.data){
-          if(chk.data.some(x => x.member_id === mid)) return showAlertPopup("এই Member ID ইতোমধ্যে ব্যবহৃত হয়েছে।");
-          if(chk.data.some(x => x.mobile === mobile)) return showAlertPopup("এই মোবাইল নম্বর ইতোমধ্যে একজন সদস্যের জন্য ব্যবহৃত হয়েছে।");
-        }
-      }catch(err){ console.warn("cloud duplicate check", err); }
-    }
-    let m = { id:id(), type:"member", memberId:mid, nameBn:g("nameBn"), nameEn:g("nameEn"), fatherBn:g("fatherBn"), fatherEn:g("fatherEn"), motherBn:g("motherBn"), motherEn:g("motherEn"), mobile, whatsapp:normalizeDigits(g("whatsapp")), email:g("email"), nid:g("nid"), dob:g("dob"), profession:g("profession"), address:g("address"), monthlyInstallment:Number(g("monthlyInstallment")), localPassword:g("password"), status:"pending", createdAt:Date.now(), updatedAt:Date.now() };
-    await put("members", m);
-    await queue("createMember", m);
-    if(cloudReady){
-      try{
-        const u = await ensureAuthForRecord(m);
-        if(u){ m.authUid = u; m.updatedAt = Date.now(); suppressCloudQueue = true; try{ await put("members", m); }finally{ suppressCloudQueue = false; } }
-      }catch(err){ console.warn("registration auth", err); }
-    }
-    await put("notifications", { id:id(), message:`New member registration: ${m.memberId} — ${m.nameBn} — Pending`, createdAt:Date.now(), audience:"staff", type:"member-registration", memberId:m.memberId });
-    await log("গুরুত্বপূর্ণ Account Activity", `New member registration submitted for ${m.memberId}`);
-    toast("Registration Successful");
-    setTimeout(() => renderLogin(), 700);
-  };
-}
-
-async function memberList(){
-  let ms = (await all("members")).filter(x => x.type !== "maker"), ds = await all("deposits");
-  if(role(session) === "MEMBER") ms = ms.filter(x => x.memberId === session.memberId);
-  $("#main").innerHTML = `<div class="section-title">Member Search</div><div class="card"><div class="field"><input id="q" placeholder="Member ID / Name / Mobile / WhatsApp"></div></div><div class="table-wrap" style="margin-top:8px"><table class="table"><thead><tr><th>ID</th><th>Name</th><th>Mobile</th><th>Installment</th><th>Status</th><th>Action</th></tr></thead><tbody id="mt"></tbody></table></div>`;
-  const paint = () => { $("#mt").innerHTML = ms.filter(m => { let q = norm($("#q").value); return !q || [m.memberId, m.nameBn, m.nameEn, m.mobile, m.whatsapp].some(v => norm(v).includes(q)); }).map(m => { let c = calc(m, ds); return `<tr><td>${m.memberId}</td><td>${m.nameBn}<br>${m.nameEn}</td><td>${m.mobile}</td><td>৳${money(m.monthlyInstallment)}</td><td><span class="badge ${m.status}">${m.status}</span></td><td>${role(session) !== "MEMBER" ? `<button class="neutral" onclick="approveMember('${m.id}','${m.status}')">${m.status === "pending" ? "Approve" : "Edit"}</button>` : "View"}</td></tr>`; }).join("") || "<tr><td colspan=6>No data</td></tr>"; };
-  $("#q").oninput = paint; paint();
-}
-window.approveMember = async (id, status) => {
-  let m = await one("members", id);
-  if(!m) return;
-  if(status === "pending"){
-    m.status = "active"; m.approvedAt = today(); m.updatedAt = Date.now();
-    await put("members", m);
-    await queue("updateMember", m);
-    await log("গুরুত্বপূর্ণ Account Activity", `Member Approved: ${m.memberId}`);
-    await put("notifications", { id:id(), message:`Member approved: ${m.memberId} — ${m.nameBn}`, createdAt:Date.now(), audience:"member", memberId:m.memberId, type:"member-approved" });
-    toast("Member Approved");
-    memberList();
-  }else toast("Member editing can be extended from Admin/Maker workflow.");
-};
-
-async function depositForm(){
-  let ms = await all("members");
-  if(role(session) === "MEMBER") ms = ms.filter(x => x.memberId === session.memberId && x.status === "active");
-  if(role(session) === "MEMBER" && ms.length === 0){
-    $("#main").innerHTML = `<div class="notice">Inactive/Pending member-এর জন্য জমা বা উত্তোলন করা যাবে না।</div>`;
-    return;
-  }
-
-  $("#main").innerHTML = `<div class="section-title">অর্থ ব্যবস্থাপনা / Deposit</div>
-  <div id="depositMemberInfo" class="card" style="margin-bottom:8px"></div>
-  <div class="card"><form id="df"><div class="form-grid">
-  <div class="field"><label>Member</label><select id="dm">${ms.map(m => `<option value="${m.memberId}">${m.memberId} — ${m.nameBn}</option>`).join("")}</select></div>
-  <div class="field"><label>Deposit Date</label><input id="dd" value="${today()}"></div>
-  <div class="field"><label>Deposit Type</label><select id="dt"><option>মাসিক জমা</option><option>অগ্রিম জমা</option><option>বিশেষ চাঁদা</option><option>উত্তোলন</option><option>অন্যান্য</option></select></div>
-  <div class="field"><label>জমার অংক</label><input id="amt" type="number" min="0.01" step="0.01" required></div>
-
-  <div class="field"><label>জমার মাধ্যম</label>
-    <select id="pm">
-     <option value="Cash">Cash</option>
-     <option value="Bank">Bank</option>
-     <option value="Mobile Banking">Mobile Banking</option>
-    </select>
-  </div>
-
-  <div class="field" id="cashBox"><label>Cash জমা দিলে — কার মাধ্যমে জমা দিয়েছে?</label>
-    <input id="cashDepositor" placeholder="যেমন: মোঃ রাকিব">
-  </div>
-
-  <div class="field" id="bankBox" style="display:none"><label>Bank Deposit Method</label>
-    <select id="bankMethod">
-     <option value="নগদে">নগদে</option>
-     <option value="BFTN">BFTN</option>
-     <option value="RTGS">RTGS</option>
-     <option value="NPSB">NPSB</option>
-     <option value="Remittance">Remittance</option>
-    </select>
-  </div>
-
-  <div class="field" id="mobileBox" style="display:none"><label>Mobile Banking Provider</label>
-    <select id="mobileMethod">
-     <option value="বিকাশ">বিকাশ</option>
-     <option value="নগদ">নগদ</option>
-     <option value="রকেট">রকেট</option>
-     <option value="উপায়">উপায়</option>
-     <option value="অন্যান্য">অন্যান্য</option>
-    </select>
-  </div>
-
-  <div class="field"><label>Transaction Reference / Number</label><input id="ref" placeholder="প্রযোজ্য হলে"></div>
-  <div class="field"><label>Description</label><input id="desc"></div>
-  <div class="field"><label>Comment / Note</label><input id="note"></div>
-  </div>
-  <div class="notice" style="margin-top:10px">Member নিজে জমা দিলে লেনদেনটি প্রথমে <b>Pending</b> থাকবে। Admin/authorized user Approve না করা পর্যন্ত এটি Account Balance-এ যোগ হবে না।</div>
-  <div class="actions"><button class="primary">Save & Submit</button><button type="reset" class="neutral">Clear</button></div></form></div>`;
-
-  const update = async () => {
-    let m = ms.find(x => x.memberId === $("#dm").value);
-    let ds = await all("deposits");
-    let c = m ? calc(m, ds) : { total:0, due:0, advance:0 };
-    let approved = ds.filter(x => x.memberId === m?.memberId && x.status === "approved");
-    let normal = approved.filter(x => !["উত্তোলন","Withdrawal","withdrawal"].includes(x.type));
-    let withdrawals = approved.filter(x => ["উত্তোলন","Withdrawal","withdrawal"].includes(x.type));
-    let totalDeposit = normal.reduce((a,x) => a + Number(x.amount||0), 0);
-    let totalWithdrawal = withdrawals.reduce((a,x) => a + Number(x.amount||0), 0);
-    let last = [...normal].sort((a,b) => (b.submittedAt||0) - (a.submittedAt||0))[0];
-
-    $("#depositMemberInfo").innerHTML = m ? `
-    <div class="section-title" style="margin:0 0 8px">Member Account Summary</div>
-    <div style="font-weight:700;font-size:16px">${m.nameBn || m.nameEn}</div>
-    <div class="muted">Member ID: ${m.memberId} · Mobile: ${m.mobile || "—"}</div>
-    <div class="grid" style="margin-top:8px">
-      <div><span class="muted">Installment</span><br><b>৳${money(m.monthlyInstallment)}</b></div>
-      <div><span class="muted">Total</span><br><b>৳${money(totalDeposit)}</b></div>
-      <div><span class="muted">Due</span><br><b>৳${money(c.due)}</b></div>
-      <div><span class="muted">Advance</span><br><b>৳${money(c.advance)}</b></div>
-      <div><span class="muted">সর্বশেষ জমা</span><br><b>${last?.date || "—"} · ৳${money(last?.amount||0)}</b></div>
-      <div><span class="muted">মোট উত্তোলন</span><br><b>৳${money(totalWithdrawal)}</b></div>
-    </div>` : "";
-  };
-
-  const updatePaymentFields = () => {
-    const p = $("#pm").value;
-    $("#cashBox").style.display = p === "Cash" ? "block" : "none";
-    $("#bankBox").style.display = p === "Bank" ? "block" : "none";
-    $("#mobileBox").style.display = p === "Mobile Banking" ? "block" : "none";
-  };
-  $("#dm").onchange = update; $("#pm").onchange = updatePaymentFields;
-  await update(); updatePaymentFields();
-
-  $("#df").onsubmit = async e => {
-    e.preventDefault();
-    let m = ms.find(x => x.memberId === $("#dm").value);
-    if(!m || m.status !== "active") return showAlertPopup("Inactive/Pending Member-এর জন্য জমা বা উত্তোলন করা যাবে না।");
-
-    const paymentMethod = $("#pm").value;
-    let paymentDetail = "";
-    if(paymentMethod === "Cash"){
-      paymentDetail = $("#cashDepositor").value.trim();
-      if(!paymentDetail) return showAlertPopup("Cash জমা হলে কার মাধ্যমে জমা দিয়েছে তা লিখুন।");
-    }else if(paymentMethod === "Bank"){
-      paymentDetail = $("#bankMethod").value;
-    }else if(paymentMethod === "Mobile Banking"){
-      paymentDetail = $("#mobileMethod").value;
-    }
-
-    let type = $("#dt").value;
-    if((type === "বিশেষ চাঁদা" || type === "অন্যান্য") && !$("#desc").value.trim()) return showAlertPopup("Description required");
-
-    const amount = Number($("#amt").value || 0);
-    if(amount <= 0) return showAlertPopup("জমার অংক সঠিকভাবে দিন");
-
-    const status = role(session) === "MEMBER" ? "pending" : "approved";
-
-    let d = {
-      id:id(), memberId:m.memberId, memberName:m.nameBn, date:$("#dd").value || today(),
-      type, description:$("#desc").value.trim(), amount,
-      paymentMethod, paymentDetail,
-      cashDepositor: paymentMethod === "Cash" ? $("#cashDepositor").value.trim() : "",
-      bankMethod: paymentMethod === "Bank" ? $("#bankMethod").value : "",
-      mobileMethod: paymentMethod === "Mobile Banking" ? $("#mobileMethod").value : "",
-      reference: normalizeDigits($("#ref").value.trim()),
-      note: $("#note").value.trim(),
-      submittedBy: session.username, submittedAt: Date.now(), status
-    };
-
-    await put("deposits", d);
-    await queue("createDeposit", d);
-    await log("গুরুত্বপূর্ণ Account Activity", `Deposit Submission: ${d.memberId} ৳${d.amount} (${d.paymentMethod})`);
-
-    if(status === "pending"){
-      await put("notifications", {
-        id:id(),
-        message:`Pending deposit: ${d.memberId} — ${d.memberName} — ৳${money(d.amount)} — ${d.paymentMethod} (${d.paymentDetail})`,
-        createdAt:Date.now(), audience:"staff", type:"transaction-pending", depositId:d.id, memberId:d.memberId
-      });
-      alert(`জমা সফলভাবে Submit হয়েছে।\nAmount: ৳${money(d.amount)}\nStatus: Pending Approval\nAdmin Approve করার পর টাকা Account Balance-এ যোগ হবে।`);
-    }else{
-      alert(`Deposit Saved & Approved\nAmount: ৳${money(d.amount)}\nStatus: Approved`);
-    }
-
-    e.target.reset(); $("#dd").value = today(); updatePaymentFields(); await update();
-  };
-}
-
-async function history(){
-  let ds = await all("deposits"), ms = await all("members");
-  if(role(session) === "MEMBER") ds = ds.filter(x => x.memberId === session.memberId);
-  $("#main").innerHTML = `<div class="section-title">Deposit History</div><div class="table-wrap"><table class="table"><thead><tr><th>SL</th><th>Date</th><th>Member</th><th>Type</th><th>Method</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead><tbody id="ht"></tbody></table></div>`;
-  let cumul = {}; ds.sort((a,b) => parseDMY(a.date) - parseDMY(b.date));
-  $("#ht").innerHTML = ds.map((d,i) => { cumul[d.memberId] = (cumul[d.memberId]||0) + (d.status === "approved" ? Number(d.amount) : 0); return `<tr><td>${i+1}</td><td>${d.date}</td><td>${d.memberId} — ${d.memberName}</td><td>${d.type}</td><td>${d.paymentMethod}</td><td>৳${money(d.amount)}</td><td><span class="badge ${d.status}">${d.status}</span></td><td>${d.status === "pending" && role(session) !== "MEMBER" ? `<button class="primary" onclick="approveDeposit('${d.id}',true)">Approve</button> <button class="danger" onclick="approveDeposit('${d.id}',false)">Reject</button>` : ""}</td></tr>`; }).join("") || "<tr><td colspan=8>No data</td></tr>";
-}
-window.approveDeposit = async (id, ok) => {
-  let d = await one("deposits", id);
-  if(!d) return;
-  d.status = ok ? "approved" : "rejected";
-  d.reviewedBy = session.username;
-  d.reviewedAt = Date.now();
-  await put("deposits", d);
-  await queue("updateDeposit", d);
-  await log("গুরুত্বপূর্ণ Account Activity", `Deposit ${ok ? 'Approved' : 'Rejected'} for ${d.memberId}`);
-  toast(ok ? "Deposit Approved" : "Deposit Rejected");
-  history();
-};
 
 async function reports(){
   const ms = (await all("members")).filter(x => x.type === "member");
   const ds = await all("deposits");
+  let ds = await all("deposits");
   const logs = await all("activityLogs");
   const isMember = role(session) === "MEMBER";
   const members = isMember ? ms.filter(x => x.memberId === session.memberId) : ms;
+  /* Member isolation: সদস্য শুধু নিজের transaction দেখতে পারবে */
+  if(isMember) ds = ds.filter(d => d.memberId === session.memberId);
 
   const reportTypes = [
+  const allReportTypes = [
    ["member-statement","👤 Member Statement","সদস্যভিত্তিক বিস্তারিত জমা, উত্তোলন ও ব্যালেন্স"],
    ["member-balance","💰 Member Balance Summary","সকল সদস্যের মোট জমা, Due, Advance ও বর্তমান ব্যালেন্স"],
    ["collection-date","📅 Date-wise Collection","নির্দিষ্ট তারিখের মোট আদায়"],
-   ["collection-month","🗓️ Monthly Collection","মাসভিত্তিক জমা ও উত্তোলনের সারাংশ"],
-   ["member-collection","👥 Member-wise Collection","প্রতিটি সদস্যের জমার হিসাব"],
-   ["due-advance","⚠️ Due & Advance Report","বকেয়া ও অগ্রিম সদস্যের তালিকা"],
-   ["installment","💳 Installment Collection","কিস্তি অনুযায়ী আদায়ের অবস্থা"],
-   ["withdrawal","↘️ Withdrawal Report","উত্তোলনের পূর্ণ রিপোর্ট"],
-   ["transaction","📒 Transaction Register","সব approved/pending/rejected লেনদেনের রেজিস্টার"],
-   ["payment-method","🏦 Payment Method Report","Cash/Bank/Mobile Banking অনুযায়ী আদায়"],
-   ["member-register","📋 Member Register","সদস্যদের পূর্ণ তালিকা ও status"],
-   ["new-members","🆕 New Member Report","নির্দিষ্ট সময়ের নতুন সদস্য"],
-   ["inactive-members","⛔ Inactive/Rejected Members","Inactive ও Rejected সদস্য"],
    ["fund-summary","📊 Fund Summary","মোট জমা, উত্তোলন ও নেট তহবিল"],
    ["pending","⏳ Pending Approval Report","Pending member ও transaction"]
   ];
+  /* Member-এর জন্য রিপোর্ট সীমিত: শুধু নিজের Statement দেখা যাবে */
+  const reportTypes = isMember ? allReportTypes.filter(rt => rt[0] === "member-statement") : allReportTypes;
 
   $("#main").innerHTML = `
   <div class="section-title">Reports / রিপোর্ট</div>
   <div class="notice">একটি সমবায় সমিতির দৈনন্দিন হিসাব পরিচালনার প্রয়োজনীয় রিপোর্টগুলো এখানে এক জায়গায় রাখা হয়েছে। রিপোর্ট নির্বাচন করে Generate করুন; এরপর Popup থেকে শুধু PDF তৈরি করা যাবে।</div>
+  <div class="section-title">${isMember ? "My Statement / আমার রিপোর্ট" : "Reports / রিপোর্ট"}</div>
+  <div class="notice">${isMember ? "সদস্য হিসেবে আপনি শুধু নিজের Statement রিপোর্ট দেখতে ও PDF ডাউনলোড করতে পারবেন — অন্য সদস্যের তথ্য দেখার কোনো সুযোগ নেই।" : "একটি সমবায় সমিতির দৈনন্দিন হিসাব পরিচালনার প্রয়োজনীয় রিপোর্টগুলো এখানে এক জায়গায় রাখা হয়েছে। রিপোর্ট নির্বাচন করে Generate করুন; এরপর Popup থেকে শুধু PDF তৈরি করা যাবে।"}</div>
   <div class="grid" id="reportCards" style="margin-top:8px">
   ${reportTypes.map(([id2,title,desc]) => `
    <div class="card report-card" data-report="${id2}" style="cursor:pointer;min-height:92px">
-    <div style="font-size:15px;font-weight:700">${title}</div>
-    <div class="muted" style="margin-top:5px">${desc}</div>
-   </div>`).join("")}
-  </div>`;
-
-  document.querySelectorAll(".report-card").forEach(el => {
-    el.onclick = () => openReportGenerator(el.dataset.report, reportTypes.find(x => x[0] === el.dataset.report)?.[1] || "Report", members, ds, logs);
-  });
-}
-
-function reportDateDefaults(){
-  const to = isoToday();
-  const d = new Date(); d.setDate(1);
-  const from = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-01`;
-  return { from, to };
-}
-function reportDmyToISO(s){
-  if(!s) return "";
-  const p = String(s).split("-");
-  if(p.length !== 3) return s;
-  return `${p[2]}-${p[1]}-${p[0]}`;
-}
-function reportIsWithdrawal(d){ return ["উত্তোলন","Withdrawal","withdrawal"].includes(d.type); }
-function reportApproved(ds){ return ds.filter(x => x.status === "approved"); }
-function reportMemberCalc(m, ds){
-  const approved = reportApproved(ds).filter(x => x.memberId === m.memberId);
-  const deposits = approved.filter(x => !reportIsWithdrawal(x)).reduce((a,x) => a + Number(x.amount||0), 0);
-  const withdrawal = approved.filter(reportIsWithdrawal).reduce((a,x) => a + Number(x.amount||0), 0);
-  const c = calc(m, ds);
-  return { deposits, withdrawal, balance:deposits - withdrawal, due:c.due, advance:c.advance, required:c.required };
-}
-
-function openReportGenerator(type, title, members, ds, logs){
-  const old = document.getElementById("reportGeneratorModal"); if(old) old.remove();
-  const def = reportDateDefaults();
-  const modal = document.createElement("div");
-  modal.id = "reportGeneratorModal"; modal.className = "modal";
-  const memberOptions = members.map(m => `<option value="${m.memberId}">${m.memberId} — ${m.nameBn || m.nameEn}</option>`).join("");
-  modal.innerHTML = `
-  <div class="modal-card" style="max-height:90vh;overflow:auto;width:min(820px,100%)">
-   <div class="section-title">${title}</div>
-   <div class="form-grid">
-    <div class="field"><label>From Date</label><input id="rFrom" type="date" value="${def.from}"></div>
-    <div class="field"><label>To Date</label><input id="rTo" type="date" value="${def.to}"></div>
-    <div class="field" id="rMemberWrap"><label>Member</label><select id="rMember">${memberOptions || "<option>No member</option>"}</select></div>
-    <div class="field"><label>Transaction Status</label><select id="rStatus"><option value="approved">Approved</option><option value="all">All</option><option value="pending">Pending</option><option value="rejected">Rejected</option></select></div>
-   </div>
-   <div class="actions" style="margin-top:12px">
-    <button class="primary" id="generateSelectedReport">Generate Report</button>
-    <button class="neutral" id="closeReportGenerator">Close</button>
-   </div>
-   <div id="reportResult" style="margin-top:10px"></div>
   </div>`;
   document.body.appendChild(modal);
 
   const hideMember = ["collection-date","collection-month","due-advance","member-balance","withdrawal","transaction","payment-method","member-register","new-members","inactive-members","fund-summary","pending"].includes(type);
+  const hideMember = role(session) === "MEMBER" || ["collection-date","collection-month","due-advance","member-balance","withdrawal","transaction","payment-method","member-register","new-members","inactive-members","fund-summary","pending"].includes(type);
   if(hideMember) $("#rMemberWrap").style.display = "none";
 
   $("#closeReportGenerator").onclick = () => modal.remove();
-  $("#generateSelectedReport").onclick = async () => {
-    const from = $("#rFrom").value, to = $("#rTo").value, status = $("#rStatus").value, memberId = $("#rMember").value;
-    const result = buildReport(type, title, members, ds, logs, { from, to, status, memberId });
-    if(!result) return;
-    $("#reportResult").innerHTML = `
-     <div class="card">
-       <div class="notice">রিপোর্ট তৈরি হয়েছে। নিচের <b>Download PDF</b> চাপলে Print/PDF window খুলবে।</div>
-       <div class="actions"><button class="primary" id="downloadGeneratedPdf">Download PDF</button></div>
-     </div>`;
-    $("#downloadGeneratedPdf").onclick = () => printGenericReport(result, title);
-  };
 }
 
 function buildReport(type, title, members, ds, logs, opt){
+  /* Member isolation (defense in depth): সদস্য শুধু নিজের Statement গণনা করতে পারবে */
+  if(role(session) === "MEMBER" && type !== "member-statement") return null;
   const from = opt.from, to = opt.to, status = opt.status, memberId = opt.memberId;
   const inRange = d => { const x = reportDmyToISO(d.date); return (!from || x >= from) && (!to || x <= to); };
   let rows = [], headers = [], summary = "", filterStatus = (d) => status === "all" || d.status === status;
-
-  if(type === "member-statement"){
-    const m = members.find(x => x.memberId === memberId); if(!m) return showAlertPopup("Member নির্বাচন করুন");
-    const tx = ds.filter(d => d.memberId === m.memberId && d.status === "approved" && inRange(d)).sort((a,b) => parseDMY(a.date) - parseDMY(b.date));
-    let bal = 0, dep = 0, wdr = 0;
-    rows = tx.map(d => { let a = Number(d.amount||0), w = reportIsWithdrawal(d); if(w){ wdr += a; bal -= a; }else{ dep += a; bal += a; }
-      return [d.date, d.description || d.type || "জমা", d.paymentMethod || "—", w ? "" : money(a), w ? money(a) : "", money(bal)];
-    });
-    headers = ["তারিখ","বিবরণ","মাধ্যম","জমা","উত্তোলন","ব্যালেন্স"];
-    summary = `Member: ${m.nameBn || m.nameEn} · ID: ${m.memberId} · মোট জমা ৳${money(dep)} · মোট উত্তোলন ৳${money(wdr)} · ব্যালেন্স ৳${money(bal)}`;
-  }else if(type === "member-balance"){
-    headers = ["Member ID","Member Name","Mobile","Installment","Total Deposit","Withdrawal","Balance","Due","Advance","Status"];
-    rows = members.map(m => { const c = reportMemberCalc(m, ds); return [m.memberId, m.nameBn || m.nameEn, m.mobile || "—", `৳${money(m.monthlyInstallment)}`, `৳${money(c.deposits)}`, `৳${money(c.withdrawal)}`, `৳${money(c.balance)}`, `৳${money(c.due)}`, `৳${money(c.advance)}`, m.status]; });
-    summary = `Members: ${members.length}`;
-  }else if(type === "collection-date"){
-    const tx = reportApproved(ds).filter(inRange).filter(d => !reportIsWithdrawal(d));
-    const map = {}; tx.forEach(d => map[d.date] = (map[d.date]||0) + Number(d.amount||0));
-    headers = ["তারিখ","মোট জমা","লেনদেন সংখ্যা"];
-    rows = Object.keys(map).sort((a,b) => parseDMY(a) - parseDMY(b)).map(k => [k, `৳${money(map[k])}`, tx.filter(d => d.date === k).length]);
-    summary = `মোট আদায় ৳${money(tx.reduce((a,d) => a + Number(d.amount||0), 0))}`;
-  }else if(type === "collection-month"){
-    const tx = reportApproved(ds).filter(inRange);
-    const map = {}; tx.forEach(d => { const k = reportDmyToISO(d.date).slice(0,7); map[k] ??= { dep:0, wdr:0, count:0 }; if(reportIsWithdrawal(d)) map[k].wdr += Number(d.amount||0); else map[k].dep += Number(d.amount||0); map[k].count++; });
-    headers = ["মাস","জমা","উত্তোলন","নেট","লেনদেন সংখ্যা"];
-    rows = Object.keys(map).sort().map(k => [k, `৳${money(map[k].dep)}`, `৳${money(map[k].wdr)}`, `৳${money(map[k].dep - map[k].wdr)}`, map[k].count]);
-  }else if(type === "member-collection"){
-    const tx = reportApproved(ds).filter(inRange).filter(d => !reportIsWithdrawal(d));
-    const map = {}; tx.forEach(d => { map[d.memberId] ??= { name:d.memberName, amount:0, count:0 }; map[d.memberId].amount += Number(d.amount||0); map[d.memberId].count++; });
-    headers = ["Member ID","Member Name","মোট জমা","লেনদেন সংখ্যা"];
-    rows = Object.entries(map).sort((a,b) => b[1].amount - a[1].amount).map(([id2,x]) => [id2, x.name, `৳${money(x.amount)}`, x.count]);
-  }else if(type === "due-advance"){
-    headers = ["Member ID","Member Name","Required","Total Deposit","Due","Advance","Status"];
-    rows = members.map(m => { const c = reportMemberCalc(m, ds); return [m.memberId, m.nameBn || m.nameEn, `৳${money(c.required)}`, `৳${money(c.deposits)}`, `৳${money(c.due)}`, `৳${money(c.advance)}`, m.status]; }).filter(r => Number(String(r[4]).replace(/[^\d.-]/g,"")) > 0 || Number(String(r[5]).replace(/[^\d.-]/g,"")) > 0);
-  }else if(type === "installment"){
-    headers = ["Member ID","Member Name","Installment","Required","Collected","Due","Advance"];
-    rows = members.map(m => { const c = reportMemberCalc(m, ds); return [m.memberId, m.nameBn || m.nameEn, `৳${money(m.monthlyInstallment)}`, `৳${money(c.required)}`, `৳${money(c.deposits)}`, `৳${money(c.due)}`, `৳${money(c.advance)}`]; });
-  }else if(type === "withdrawal"){
-    const tx = ds.filter(d => filterStatus(d) && reportIsWithdrawal(d) && inRange(d)).sort((a,b) => parseDMY(a.date) - parseDMY(b.date));
-    headers = ["তারিখ","Member ID","Member Name","বিবরণ","মাধ্যম","পরিমাণ","Status"];
-    rows = tx.map(d => [d.date, d.memberId, d.memberName, d.description || d.type, d.paymentMethod || "—", `৳${money(d.amount)}`, d.status]);
-  }else if(type === "transaction"){
-    const tx = ds.filter(d => filterStatus(d) && inRange(d)).sort((a,b) => parseDMY(a.date) - parseDMY(b.date));
-    headers = ["তারিখ","Member ID","Member Name","ধরন","মাধ্যম","জমা/উত্তোলন","পরিমাণ","Status"];
-    rows = tx.map(d => [d.date, d.memberId, d.memberName, d.type, d.paymentMethod || "—", reportIsWithdrawal(d) ? "উত্তোলন" : "জমা", `৳${money(d.amount)}`, d.status]);
-  }else if(type === "payment-method"){
-    const tx = reportApproved(ds).filter(inRange);
-    const map = {}; tx.forEach(d => { const k = d.paymentMethod || "Unknown"; map[k] ??= { dep:0, wdr:0, count:0 }; if(reportIsWithdrawal(d)) map[k].wdr += Number(d.amount||0); else map[k].dep += Number(d.amount||0); map[k].count++; });
-    headers = ["লেনদেনের মাধ্যম","জমা","উত্তোলন","নেট","লেনদেন সংখ্যা"];
-    rows = Object.entries(map).map(([k,x]) => [k, `৳${money(x.dep)}`, `৳${money(x.wdr)}`, `৳${money(x.dep - x.wdr)}`, x.count]);
-  }else if(type === "member-register"){
-    headers = ["Member ID","Name","Mobile","NID","Installment","Status","Registration Date"];
-    rows = members.sort((a,b) => (b.createdAt||0) - (a.createdAt||0)).map(m => [m.memberId, m.nameBn || m.nameEn, m.mobile || "—", m.nid || "—", `৳${money(m.monthlyInstallment)}`, m.status, m.createdAt ? new Date(m.createdAt).toLocaleDateString("en-GB") : "—"]);
-  }else if(type === "new-members"){
-    const arr = members.filter(m => m.createdAt && new Date(m.createdAt) >= new Date(from + "T00:00:00") && new Date(m.createdAt) <= new Date(to + "T23:59:59"));
-    headers = ["Member ID","Name","Mobile","Installment","Status","Registration Date"];
-    rows = arr.map(m => [m.memberId, m.nameBn || m.nameEn, m.mobile || "—", `৳${money(m.monthlyInstallment)}`, m.status, new Date(m.createdAt).toLocaleDateString("en-GB")]);
-  }else if(type === "inactive-members"){
-    const arr = members.filter(m => m.status === "inactive" || m.status === "rejected");
-    headers = ["Member ID","Name","Mobile","Status","Updated"];
-    rows = arr.map(m => [m.memberId, m.nameBn || m.nameEn, m.mobile || "—", m.status, m.updatedAt ? new Date(m.updatedAt).toLocaleDateString("en-GB") : "—"]);
-  }else if(type === "fund-summary"){
-    const tx = reportApproved(ds).filter(inRange);
-    const dep = tx.filter(d => !reportIsWithdrawal(d)).reduce((a,d) => a + Number(d.amount||0), 0);
-    const wdr = tx.filter(reportIsWithdrawal).reduce((a,d) => a + Number(d.amount||0), 0);
-    headers = ["বিষয়","পরিমাণ"]; rows = [["মোট জমা",`৳${money(dep)}`],["মোট উত্তোলন",`৳${money(wdr)}`],["নেট তহবিল",`৳${money(dep - wdr)}`],["Approved Transaction",tx.length]];
-    summary = `Period: ${from} — ${to}`;
-  }else if(type === "pending"){
-    const pm = members.filter(m => m.status === "pending");
-    const pd = ds.filter(d => d.status === "pending");
-    headers = ["ধরন","ID","নাম/বিবরণ","তারিখ","পরিমাণ","Status"];
-    rows = [...pm.map(m => ["Member Registration", m.memberId, m.nameBn || m.nameEn, m.createdAt ? new Date(m.createdAt).toLocaleDateString("en-GB") : "—", "—", "pending"]),
-            ...pd.map(d => ["Transaction", d.memberId, d.memberName, d.date, `৳${money(d.amount)}`, "pending"])];
-  }else return null;
-
-  return { title, from, to, headers, rows, summary: summary || `Period: ${from || "—"} — ${to || "—"}` };
-}
-
-function printGenericReport(result, title){
-  const w = window.open("", "_blank");
-  if(!w) return showAlertPopup("Popup blocked — browser popup permission দিন");
-  const head = result.headers.map(h => `<th>${h}</th>`).join("");
-  const body = result.rows.map(r => `<tr>${r.map(c => `<td>${c ?? ""}</td>`).join("")}</tr>`).join("");
-  w.document.write(`<html><head><meta charset="utf-8"><title>${title}</title>
-  <style>
-  body{font-family:Arial,"Noto Sans Bengali",sans-serif;font-size:11px;margin:22px;color:#111}
-  h1{text-align:center;font-size:19px;margin:0 0 4px}h2{text-align:center;font-size:13px;margin:0 0 10px}
-  .meta{text-align:center;margin-bottom:10px}.summary{border:1px solid #555;padding:7px;margin:8px 0}
-  table{border-collapse:collapse;width:100%;margin-top:8px}th,td{border:1px solid #333;padding:5px;text-align:left}
-  th{font-weight:bold} .footer{margin-top:18px;font-size:10px;display:flex;justify-content:space-between}
-  @media print{@page{size:A4 landscape;margin:10mm}button{display:none}}
-  </style></head><body>
-  <h1>ধ্রুব সংসদ</h1><h2>${title}</h2>
-  <div class="meta">Report Period: ${result.from || "—"} to ${result.to || "—"} · Generated: ${today()}</div>
-  <div class="summary">${result.summary || ""}</div>
-  <table><thead><tr>${head}</tr></thead><tbody>${body || `<tr><td colspan="${result.headers.length}">No data</td></tr>`}</tbody></table>
-  <div class="footer"><span>Prepared by: ${session?.username || "System"}</span><span>Offline Report</span></div>
-  <script>window.onload=()=>setTimeout(()=>window.print(),300);<\/script>
-  </body></html>`);
-  w.document.close();
-}
-
-function statementRows(m, ds, from, to){
-  const dmyToISO = s => { const [d,mo,y] = String(s).split("-"); return `${y}-${mo}-${d}`; };
-  return ds.filter(d => d.memberId === m.memberId && d.status === "approved" && dmyToISO(d.date) >= from && dmyToISO(d.date) <= to)
-    .sort((a,b) => parseDMY(a.date) - parseDMY(b.date));
-}
-
-function showStatementPopup(m, ds, from, to, org){
-  if(!m) return showAlertPopup("Member পাওয়া যায়নি");
-  const rows = statementRows(m, ds, from, to);
-  let deposit = 0, withdrawal = 0, balance = 0;
-  rows.forEach(d => {
-    const amount = Number(d.amount||0);
-    const isWithdraw = ["উত্তোলন","Withdrawal","withdrawal"].includes(d.type);
-    if(isWithdraw){ withdrawal += amount; balance -= amount; }else{ deposit += amount; balance += amount; }
-  });
-  const old = document.getElementById("statementModal");
-  if(old) old.remove();
-  const modal = document.createElement("div");
-  modal.id = "statementModal";
-  modal.className = "modal";
-  modal.innerHTML = `<div class="modal-card">
-   <div class="section-title">Member Statement / রিপোর্ট</div>
-  ${role(session) === "MEMBER" ? `<div class="notice">আপনি শুধু আপনার নিজের রিপোর্ট দেখতে ও PDF জেনারেট করতে পারবেন।</div>` : `<div class="notice">Admin: সকল সদস্যের রিপোর্ট ও সমিতির সকল রিপোর্ট অ্যাক্সেসযোগ্য।</div>`}
-   <div class="notice">স্টেটমেন্ট তৈরি করা হয়েছে। নিচের <b>Download PDF</b> বাটন ব্যবহার করে শুধু PDF কপি নিন।</div>
-   <div class="form-grid">
-    <div><span class="muted">Member</span><br><b>${m.nameBn || m.nameEn}</b></div>
-    <div><span class="muted">Member ID</span><br><b>${m.memberId}</b></div>
-    <div><span class="muted">Period</span><br><b>${fmtInputDate(from)} — ${fmtInputDate(to)}</b></div>
-    <div><span class="muted">Net Balance</span><br><b>৳${money(balance)}</b></div>
-   </div>
-   <div class="actions" style="margin-top:14px">
-    <button class="primary" id="downloadStatementPdf">Download PDF</button>
-    <button class="neutral" id="closeStatementPopup">Close</button>
-   </div>
-  </div>`;
-  document.body.appendChild(modal);
-  $("#closeStatementPopup").onclick = () => modal.remove();
-  $("#downloadStatementPdf").onclick = () => {
-    modal.remove();
-    printMemberStatement(m, ds, from, to, org);
-  };
-}
-
-function printMemberStatement(m, ds, from, to, org){
-  if(!m) return showAlertPopup("Member পাওয়া যায়নি");
-  const rows = statementRows(m, ds, from, to);
-  let balance = 0, deposit = 0, withdrawal = 0;
-  const trs = rows.map(d => {
-    const amount = Number(d.amount||0);
-    const isWithdraw = ["উত্তোলন","Withdrawal","withdrawal"].includes(d.type);
-    if(isWithdraw){ withdrawal += amount; balance -= amount; }else{ deposit += amount; balance += amount; }
-    return `<tr><td>${d.date}</td><td>${d.description || d.type || "জমা"}</td><td>${isWithdraw ? "" : money(amount)}</td><td>${isWithdraw ? money(amount) : ""}</td><td>${money(balance)}</td></tr>`;
-  }).join("");
-
-  let w = window.open("", "_blank");
-  if(!w) return showAlertPopup("Popup blocked — browser popup permission দিন");
-  w.document.write(`
-  <html><head><meta charset="utf-8"><title>${org || "ধ্রুব সংসদ"} - Member Statement</title>
-  <style>
-  body{font-family:Arial,"Noto Sans Bengali",sans-serif;font-size:11px;margin:24px;color:#111}
-  h1{font-size:20px;text-align:center;margin:0 0 3px}h2{text-align:center;font-size:14px;margin:0 0 10px}
-  .meta{display:grid;grid-template-columns:repeat(2,1fr);gap:5px;border:1px solid #555;padding:8px;margin:8px 0 12px}
-  .meta b{display:block}table{border-collapse:collapse;width:100%;margin-top:8px}
-  th,td{border:1px solid #333;padding:6px;text-align:left}th{background:#eee}
-  .summary{display:flex;justify-content:space-between;border:1px solid #555;padding:8px;margin-top:10px}
-  .foot{margin-top:20px;font-size:9px;color:#555}@media print{body{margin:12mm}}
-  </style></head><body>
-  <h1>${org || "ধ্রুব সংসদ"}</h1><h2>Member Statement</h2>
-  <div class="meta">
-   <div>Member Name<b>${m.nameBn || m.nameEn}</b></div><div>Member ID<b>${m.memberId}</b></div>
-   <div>Mobile<b>${m.mobile || "—"}</b></div><div>Statement Period<b>${fmtInputDate(from)} to ${fmtInputDate(to)}</b></div>
-   <div>Monthly Installment<b>৳${money(m.monthlyInstallment)}</b></div><div>Generated Date<b>${today()}</b></div>
-  </div>
-  <table><thead><tr><th>তারিখ</th><th>বিবরণ</th><th>জমা</th><th>উত্তোলন</th><th>মোট টাকা</th></tr></thead>
-  <tbody>${trs || "<tr><td colspan=5>No approved transaction</td></tr>"}</tbody>
-  <tfoot><tr><th colspan="2">মোট</th><th>৳${money(deposit)}</th><th>৳${money(withdrawal)}</th><th>৳${money(deposit - withdrawal)}</th></tr></tfoot></table>
-  <div class="summary"><b>Total Deposit: ৳${money(deposit)}</b><b>Total Withdrawal: ৳${money(withdrawal)}</b><b>Net Balance: ৳${money(deposit - withdrawal)}</b></div>
-  <div class="foot">Generated by ${org || "ধ্রুব সংসদ"} Offline Management System.</div>
-  <script>window.onload=()=>window.print()<\/script></body></html>`);
-  w.document.close();
-}
-
-function downloadMemberCSV(m, ds, from, to){
-  if(!m) return;
-  const rows = statementRows(m, ds, from, to);
-  let balance = 0;
-  let s = "Date,Description,Deposit,Withdrawal,Total\n" +
-  rows.map(d => {
-    const amount = Number(d.amount||0);
-    const isWithdraw = ["উত্তোলন","Withdrawal","withdrawal"].includes(d.type);
-    balance += isWithdraw ? -amount : amount;
-    return [d.date, d.description || d.type || "জমা", isWithdraw ? "" : amount, isWithdraw ? amount : "", balance]
-     .map(v => `"${String(v).replaceAll('"','""')}"`).join(",");
-  }).join("\n");
-  let a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob(["\ufeff" + s], { type:"text/csv;charset=utf-8" }));
-  a.download = `${m.memberId}_Statement.csv`;
-  a.click();
-}
-
-function downloadCSV(rows){
-  let s = "Member Name,Monthly Installment,Total Deposit,Total Due\n" + rows.map(r => [r.m.nameBn, r.m.monthlyInstallment, r.c.total, r.c.due].map(v => `"${String(v).replaceAll('"','""')}"`).join(",")).join("\n");
-  let a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob(["\ufeff" + s], { type:"text/csv;charset=utf-8" }));
-  a.download = "Dhruvo_Sangsad_Overall_Report.csv";
-  a.click();
-}
-function printReport(rows){
-  let w = window.open("", "_blank");
-  if(!w){ showAlertPopup("Popup blocked"); return; }
-  w.document.write(`<html><head><title>Dhruvo Sangsad Report</title><style>body{font-family:Arial,"Noto Sans Bengali";font-size:10px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #222;padding:4px}h2{font-size:13px}</style></head><body><h2>ধ্রুব সংসদ — Overall Report</h2><table><tr><th>Member Name</th><th>Monthly Installment</th><th>Total Deposit</th><th>Total Due</th></tr>${rows.map(r => `<tr><td>${r.m.nameBn}</td><td>${r.c.required / r.c.required * r.m.monthlyInstallment}</td><td>${r.c.total}</td><td>${r.c.due}</td></tr>`).join("")}</table><script>window.onload=()=>window.print()<\/script></body></html>`);
-  w.document.close();
-}
-
-async function profile(){
-  let m = (await all("members")).find(x => x.memberId === session.memberId);
-  if(!m) return;
-  const ds = await all("deposits"), c = calc(m, ds);
   $("#main").innerHTML = `
   <div class="section-title">My Profile</div>
   <div class="card" style="padding:0;overflow:hidden">
    <div style="background:linear-gradient(135deg,#eaf7ef,#f7fbf9);padding:18px;border-bottom:1px solid #dfe7e2">
+   <div class="profile-hero" style="padding:18px;border-bottom:1px solid var(--border)">
     <div style="display:flex;align-items:center;gap:12px">
      <div style="width:58px;height:58px;border-radius:50%;background:#5eaa7b;color:#fff;display:grid;place-items:center;font-size:22px;font-weight:700">${String(m.nameBn || m.nameEn || "M").trim().charAt(0)}</div>
+     <div style="width:58px;height:58px;border-radius:50%;background:var(--accent);color:var(--accent-text);display:grid;place-items:center;font-size:22px;font-weight:700">${String(m.nameBn || m.nameEn || "M").trim().charAt(0)}</div>
      <div><div style="font-size:18px;font-weight:700">${m.nameBn || m.nameEn}</div>
      <div class="muted">Member ID: ${m.memberId}</div>
      <span class="badge ${m.status}" style="margin-top:5px">${m.status}</span></div>
-    </div>
-   </div>
-   <div style="padding:14px">
-    </div>
-    <div class="section-title" style="margin-top:16px">Personal Information</div>
-    <div class="form-grid">
-     ${Object.entries({
-       "Name (Bangla)": m.nameBn, "Name (English)": m.nameEn, "Father's Name": m.fatherBn || m.fatherEn,
-       "Mother's Name": m.motherBn || m.motherEn, "Mobile": m.mobile, "WhatsApp": m.whatsapp,
-       "Email": m.email, "NID": m.nid, "Date of Birth": m.dob, "Profession": m.profession,
-       "Address": m.address, "Monthly Installment": "৳" + money(m.monthlyInstallment)
-     }).map(([k,v]) => `<div class="card"><div class="muted">${k}</div><div style="margin-top:4px;font-weight:700">${v || "—"}</div></div>`).join("")}
-    </div>
-   </div>
-  </div>`;
-}
-
-async function notifications(){
-  let n = await all("notifications");
-  if(role(session) === "ADMIN"){
-    for(const x of n){
-      if(!x.type && /^New member registration:/i.test(String(x.message || "")) && x.memberId){
-        x.type = "member-registration";
-        await put("notifications", x);
-      }
-    }
-  }
-  if(role(session) === "MEMBER") n = n.filter(x => x.audience === "member" && x.memberId === session.memberId);
-
-  $("#main").innerHTML = `
-  <div class="section-title">Notifications</div>
-  <div class="card" id="notificationList"></div>`;
-
-  const paint = () => {
-    const rows = n.sort((a,b) => b.createdAt - a.createdAt);
-    /* Mark-as-read (client-side tracking, no UI change) */
-    if(role(session) === "MEMBER"){
-      try{
-        const key = "dhruvoRead_" + (session.authUid || session.memberId);
-        const saved = JSON.parse(localStorage.getItem(key) || "[]");
-        rows.forEach(x => { if(!saved.includes(x.id)) saved.push(x.id); });
-        if(saved.length > 200) saved.splice(0, saved.length - 200);
-        localStorage.setItem(key, JSON.stringify(saved));
-      }catch(e){}
-    }
-    $("#notificationList").innerHTML = rows.map(x => {
-      const isMemberRegistration = x.type === "member-registration" || /^New member registration:/i.test(String(x.message || ""));
       const isPendingTransaction = x.type === "transaction-pending" && x.depositId;
       const clickable = role(session) === "ADMIN" && ((isMemberRegistration && x.memberId) || isPendingTransaction);
       return `<div class="notification-item" data-nid="${x.id}"
        style="padding:10px;border-bottom:1px solid #eee;${clickable ? 'cursor:pointer;background:#fffdf3' : ''}">
+       style="padding:10px;border-bottom:1px solid var(--row-border);${clickable ? 'cursor:pointer;background:var(--surface-2)' : ''}">
        <div>${x.message}${clickable ? ' <span class="badge pending">Click to Review</span>' : ''}</div>
        <div class="muted">${new Date(x.createdAt).toLocaleString()}</div>
      </div>`;
-    }).join("") || "No notifications";
-
-    document.querySelectorAll(".notification-item").forEach(el => {
-      el.onclick = async () => {
-        const item = n.find(x => x.id === el.dataset.nid);
-        if(item && (item.type === "member-registration" || /^New member registration:/i.test(String(item.message || ""))) && item.memberId) {
-          const m = (await all("members")).find(x => x.memberId === item.memberId);
-          if(m) showPendingMemberPopup(m);
-        } else if(item && item.type === "transaction-pending" && item.depositId) {
-          const d = await one("deposits", item.depositId);
-          if(d) showPendingDepositPopup(d);
-        }
-      };
-    });
-  };
-  paint();
-}
-
-function showPendingMemberPopup(m){
-  const old = document.getElementById("pendingMemberModal");
-  if(old) old.remove();
-
-  const modal = document.createElement("div");
-  modal.id = "pendingMemberModal";
-  modal.className = "modal";
-  modal.innerHTML = `
-  <div class="modal-card" style="max-height:90vh;overflow:auto;width:min(720px,100%)">
-   <div class="section-title">Pending Member Approval</div>
-   <div class="notice">নিচে Member Registration-এর সম্পূর্ণ তথ্য দেখানো হচ্ছে। সব তথ্য যাচাই করে Approve অথবা Reject করুন।</div>
-   <div class="form-grid">
-     <div class="field"><label>Member ID</label><input value="${m.memberId || ""}" readonly></div>
-     <div class="field"><label>Status</label><input value="${m.status || ""}" readonly></div>
-     <div class="field"><label>Name (Bangla)</label><input value="${m.nameBn || ""}" readonly></div>
-     <div class="field"><label>Name (English)</label><input value="${m.nameEn || ""}" readonly></div>
-     <div class="field"><label>Father's Name (Bangla)</label><input value="${m.fatherBn || ""}" readonly></div>
-     <div class="field"><label>Father's Name (English)</label><input value="${m.fatherEn || ""}" readonly></div>
-     <div class="field"><label>Mother's Name (Bangla)</label><input value="${m.motherBn || ""}" readonly></div>
-     <div class="field"><label>Mother's Name (English)</label><input value="${m.motherEn || ""}" readonly></div>
-     <div class="field"><label>Mobile</label><input value="${m.mobile || ""}" readonly></div>
-     <div class="field"><label>WhatsApp</label><input value="${m.whatsapp || ""}" readonly></div>
-     <div class="field"><label>Email</label><input value="${m.email || ""}" readonly></div>
-     <div class="field"><label>NID</label><input value="${m.nid || ""}" readonly></div>
-     <div class="field"><label>Date of Birth</label><input value="${m.dob || ""}" readonly></div>
-     <div class="field"><label>Profession</label><input value="${m.profession || ""}" readonly></div>
-     <div class="field"><label>Monthly Installment</label><input value="৳${money(m.monthlyInstallment)}" readonly></div>
-     <div class="field" style="grid-column:1/-1"><label>Address</label><textarea readonly>${m.address || ""}</textarea></div>
-   </div>
-   <div class="actions" style="margin-top:14px">
-     <button class="primary" id="popupApproveMember">Approve / Account Activate</button>
-     <button class="danger" id="popupRejectMember">Reject</button>
-     <button class="neutral" id="popupCloseMember">Close</button>
-   </div>
-  </div>`;
-
-  document.body.appendChild(modal);
-
-  $("#popupCloseMember").onclick = () => modal.remove();
-
-  $("#popupApproveMember").onclick = async () => {
-    const latest = await one("members", m.id);
-    if(!latest) return showAlertPopup("Member পাওয়া যায়নি");
-    if(latest.status !== "pending") return showAlertPopup("এই Member ইতোমধ্যে Review করা হয়েছে।");
-
-    latest.status = "active";
-    latest.approvedAt = today();
-    latest.approvedBy = session.username;
-    latest.updatedAt = Date.now();
-
-    await put("members", latest);
-    await queue("updateMember", latest);
-    await log("গুরুত্বপূর্ণ Account Activity", `Member Approved: ${latest.memberId}`);
-
-    await put("notifications", {
-      id:id(),
-      message:`Member approved: ${latest.memberId} — ${latest.nameBn}`,
-      createdAt:Date.now(),
-      audience:"member",
-      memberId:latest.memberId,
-      type:"member-approved"
-    });
-
-    modal.remove();
-    toast("Member Approved — Account Activated");
-    if(role(session) === "ADMIN") adminPanel();
-  };
-
-  $("#popupRejectMember").onclick = async () => {
-    const latest = await one("members", m.id);
-    if(!latest) return showAlertPopup("Member পাওয়া যায়নি");
-    if(latest.status !== "pending") return showAlertPopup("এই Member ইতোমধ্যে Review করা হয়েছে।");
-
-    latest.status = "rejected";
-    latest.rejectedBy = session.username;
-    latest.rejectedAt = Date.now();
-    latest.updatedAt = Date.now();
-
-    await put("members", latest);
-    await queue("updateMember", latest);
-    await log("গুরুত্বপূর্ণ Account Activity", `Member Rejected: ${latest.memberId}`);
-
-    await put("notifications", {
-      id:id(),
-      message:`Member registration rejected: ${latest.memberId} — ${latest.nameBn}`,
-      createdAt:Date.now(),
-      audience:"member",
-      memberId:latest.memberId,
-      type:"member-rejected"
-    });
-
-    modal.remove();
-    toast("Member Rejected");
-    if(role(session) === "ADMIN") adminPanel();
-  };
-}
-
-/* Activity Log with Pagination Inside Settings */
-async function renderActivityLogSettings(containerEl){
-  let logs = await all("activityLogs");
-  const userRole = role(session);
-  const currentUsername = session.username || session.memberId;
-
-  if(userRole === "MEMBER" || userRole === "MAKER") {
-    logs = logs.filter(x => String(x.user) === String(currentUsername));
-  }
-
-  const sortedLogs = logs.sort((a,b) => new Date(`${b.date} ${b.time}`) - new Date(`${a.date} ${a.time}`));
-
-  let currentPage = 1;
-  const pageSize = 10;
-
-  const renderPage = (page) => {
-    currentPage = page;
-    const start = (currentPage - 1) * pageSize;
-    const end = start + pageSize;
-    const paginatedLogs = sortedLogs.slice(start, end);
-    const totalPages = Math.ceil(sortedLogs.length / pageSize) || 1;
-
-    containerEl.innerHTML = `
-      <div class="card" style="margin-top:16px">
-        <div class="section-title">Activity Log</div>
-        <div class="notice">এখানে Login/Logout, Password Change এবং অন্যান্য গুরুত্বপূর্ণ Account Activity দেখা যাচ্ছে (সর্বশেষ Activity সবার আগে)।</div>
-        <div class="table-wrap">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Time</th>
-                <th>Activity Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${paginatedLogs.map(x => `
-                <tr>
-                  <td>${x.date}</td>
-                  <td>${x.time}</td>
-                  <td><strong>[${x.action}]</strong> ${x.details ? '— ' + x.details : ''} (User: ${x.user})</td>
-                </tr>
-              `).join("") || `<tr><td colspan="3">কোনো Activity Log পাওয়া যায়নি।</td></tr>`}
-            </tbody>
-          </table>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
-          <button class="neutral" id="actPrevBtn" ${currentPage === 1 ? 'disabled style="opacity:0.5;cursor:not-allowed"' : ''}>Previous</button>
-          <span style="font-size:12px;font-weight:700">Page ${currentPage} of ${totalPages}</span>
-          <button class="neutral" id="actNextBtn" ${currentPage >= totalPages ? 'disabled style="opacity:0.5;cursor:not-allowed"' : ''}>Next</button>
-        </div>
-      </div>
-    `;
-
-    const prevBtn = document.getElementById("actPrevBtn");
-    const nextBtn = document.getElementById("actNextBtn");
-
-    if(prevBtn){
-      prevBtn.onclick = () => {
-        if(currentPage > 1){
-          renderPage(currentPage - 1);
-        }
-      };
-    }
-
-    if(nextBtn){
-      nextBtn.onclick = () => {
-        if(currentPage < totalPages){
-          renderPage(currentPage + 1);
-        }
-      };
-    }
-  };
-
-  renderPage(1);
 }
 
 async function adminPanel(){
+  if(role(session) !== "ADMIN"){ toast("Admin access required"); return; }
   let ms = await all("members");
   let pendingM = ms.filter(x => x.type === "member" && x.status === "pending");
   let ds = await all("deposits");
-  let pendingD = ds.filter(x => x.status === "pending");
 
   $("#main").innerHTML = `
   <div class="section-title">Admin Panel</div>
   <div class="card" id="pendingApprovalHeader" style="cursor:pointer;margin-bottom:8px;background:#fffdf3">
+  <div class="card" id="pendingApprovalHeader" style="cursor:pointer;margin-bottom:8px;background:var(--surface-2)">
     <b>🔔 Pending Approval</b>
     <div class="muted">Click here to review pending member registrations and transactions</div>
   </div>
-  <div class="grid">
-    <div class="card" id="pendingMembersCard" style="cursor:pointer">
-      <b>Pending Member Approval</b>
-      <div class="metric">${pendingM.length}</div>
-      <div class="muted">Click to view pending registrations</div>
-    </div>
-    <div class="card" id="pendingDepositsCard" style="cursor:pointer">
-      <b>Pending Transaction Approval</b>
-      <div class="metric">${pendingD.length}</div>
-      <div class="muted">Click to view pending transactions</div>
-    </div>
-  </div>
-
-  <div class="section-title" style="margin-top:12px">Pending Approval</div>
-  <div class="card">
-    <div class="muted" style="margin-bottom:6px">Pending Member Registrations</div>
-    <div id="pendingMemberList"></div>
-  </div>
-
-  <div class="card" style="margin-top:8px">
-    <div class="muted" style="margin-bottom:6px">Pending Transactions</div>
-    <div id="pendingDepositList"></div>
-  </div>`;
-
-  $("#pendingApprovalHeader").onclick = async () => {
-    if(pendingM.length){
-      const m = (await all("members")).find(x => x.id === pendingM[0].id);
-      if(m) return showPendingMemberPopup(m);
-    }
-    if(pendingD.length){
-      const d = await one("deposits", pendingD[0].id);
-      if(d) return showPendingDepositPopup(d);
-    }
-    toast("No pending approval");
-  };
-
-  const memberList = $("#pendingMemberList");
-  memberList.innerHTML = pendingM.map(m => `
-    <div class="notice" data-member-id="${m.memberId}" style="cursor:pointer">
-      <b>${m.memberId} — ${m.nameBn || m.nameEn}</b>
-      <div class="muted">Mobile: ${m.mobile || "—"} · Installment: ৳${money(m.monthlyInstallment)}</div>
-      <span class="badge pending">Pending — Click to Review</span>
-    </div>`).join("") || `<div class="muted">No pending member approval</div>`;
-
-  const depositList = $("#pendingDepositList");
-  depositList.innerHTML = pendingD.map(d => `
-    <div class="notice" data-deposit-id="${d.id}" style="cursor:pointer">
-      <b>${d.memberId} — ${d.memberName}</b>
-      <div class="muted">${d.date} · ${d.type} · ৳${money(d.amount)} · ${d.paymentMethod || "—"}</div>
-      <span class="badge pending">Pending — Click to Review</span>
-    </div>`).join("") || `<div class="muted">No pending transaction approval</div>`;
-
-  document.querySelectorAll("[data-member-id]").forEach(el => {
-    el.onclick = async () => {
-      const m = (await all("members")).find(x => x.memberId === el.dataset.memberId);
-      if(m) showPendingMemberPopup(m);
-    };
-  });
-
-  document.querySelectorAll("[data-deposit-id]").forEach(el => {
-    el.onclick = async () => {
-      const d = await one("deposits", el.dataset.depositId);
-      if(d) showPendingDepositPopup(d);
-    };
-  });
-
-  $("#pendingMembersCard").onclick = async () => {
-    if(pendingM.length){
-      const m = (await all("members")).find(x => x.id === pendingM[0].id);
-      if(m) showPendingMemberPopup(m);
-    }else toast("No pending member approval");
-  };
-  $("#pendingDepositsCard").onclick = async () => {
-    if(pendingD.length){
-      const d = await one("deposits", pendingD[0].id);
-      if(d) showPendingDepositPopup(d);
-    }else toast("No pending transaction approval");
-  };
-}
-
-function showPendingDepositPopup(d){
-  const old = document.getElementById("pendingDepositModal");
-  if(old) old.remove();
-
-  const modal = document.createElement("div");
-  modal.id = "pendingDepositModal";
-  modal.className = "modal";
-  modal.innerHTML = `
-  <div class="modal-card" style="max-height:90vh;overflow:auto">
-   <div class="section-title">Pending Transaction Approval</div>
-   <div class="notice">লেনদেনের সম্পূর্ণ তথ্য যাচাই করে Approve অথবা Reject করুন।</div>
-   <div class="form-grid">
-     <div class="field"><label>Member ID</label><input value="${d.memberId || ""}" readonly></div>
-     <div class="field"><label>Member Name</label><input value="${d.memberName || ""}" readonly></div>
-     <div class="field"><label>Date</label><input value="${d.date || ""}" readonly></div>
-     <div class="field"><label>Transaction Type</label><input value="${d.type || ""}" readonly></div>
-     <div class="field"><label>Amount</label><input value="৳${money(d.amount)}" readonly></div>
-     <div class="field"><label>Payment Method</label><input value="${d.paymentMethod || "—"}" readonly></div>
-     <div class="field"><label>Payment Detail</label><input value="${d.paymentDetail || d.cashDepositor || d.bankMethod || d.mobileMethod || "—"}" readonly></div>
-     <div class="field"><label>Reference / Number</label><input value="${d.reference || "—"}" readonly></div>
-     <div class="field"><label>Description</label><input value="${d.description || "—"}" readonly></div>
-     <div class="field"><label>Submitted By</label><input value="${d.submittedBy || "—"}" readonly></div>
-     <div class="field" style="grid-column:1/-1"><label>Note</label><textarea readonly>${d.note || "—"}</textarea></div>
-   </div>
-   <div class="actions" style="margin-top:14px">
-     <button class="primary" id="popupApproveDeposit">Approve</button>
-     <button class="danger" id="popupRejectDeposit">Reject</button>
-     <button class="neutral" id="popupCloseDeposit">Close</button>
-   </div>
-  </div>`;
-
-  document.body.appendChild(modal);
-  $("#popupCloseDeposit").onclick = () => modal.remove();
-
-  const review = async (ok) => {
-    const latest = await one("deposits", d.id);
-    if(!latest) return showAlertPopup("Transaction পাওয়া যায়নি");
-    if(latest.status !== "pending") return showAlertPopup("এই transaction ইতোমধ্যে Review করা হয়েছে।");
-
-    if(ok){
-      const member = (await all("members")).find(x => x.memberId === latest.memberId);
-      if(!member || member.status !== "active") return showAlertPopup("Member inactive/pending — transaction approve করা যাবে না।");
-    }
-
-    latest.status = ok ? "approved" : "rejected";
-    latest.reviewedBy = session.username;
-    latest.reviewedAt = Date.now();
-    await put("deposits", latest);
-    await queue("updateDeposit", latest);
-    await log("গুরুত্বপূর্ণ Account Activity", `Transaction ${ok ? 'Approved' : 'Rejected'} for ${latest.memberId}`);
-
-    modal.remove();
-    toast(ok ? "Transaction Approved" : "Transaction Rejected");
-    adminPanel();
-  };
-
-  $("#popupApproveDeposit").onclick = () => review(true);
-  $("#popupRejectDeposit").onclick = () => review(false);
-}
-
-async function dataManagement(){
-  if(role(session) !== "ADMIN"){ toast("Admin access required"); return; }
-
-  const ms = (await all("members")).filter(x => x.type === "member");
-  const ds = await all("deposits");
-
-  $("#main").innerHTML = `
-  <div class="section-title">Data Management</div>
-  <div class="notice">Admin এখান থেকে Member তথ্য এবং Transaction তথ্য Edit/Delete করতে পারবেন। প্রতিটি পরিবর্তন Activity Log-এ সংরক্ষিত হবে।</div>
-
-  <div class="card">
-   <div class="section-title">Member Data</div>
-   <div class="field"><input id="memberSearchAdmin" placeholder="Member ID / নাম / মোবাইল দিয়ে খুঁজুন"></div>
-   <div class="table-wrap"><table class="table">
-    <thead><tr><th>ID</th><th>Name</th><th>Mobile</th><th>Status</th><th>Installment</th><th>Action</th></tr></thead>
-    <tbody id="adminMemberRows"></tbody>
-   </table></div>
-  </div>
-
-  <div class="card" style="margin-top:10px">
-   <div class="section-title">Transaction Data</div>
-   <div class="field"><input id="txSearchAdmin" placeholder="Member ID / তারিখ / ধরন দিয়ে খুঁজুন"></div>
-   <div class="table-wrap"><table class="table">
-    <thead><tr><th>Date</th><th>Member</th><th>Type</th><th>Amount</th><th>Method</th><th>Status</th><th>Action</th></tr></thead>
-    <tbody id="adminTxRows"></tbody>
-   </table></div>
-  </div>`;
-
-  const paintMembers = () => {
-    const q = String($("#memberSearchAdmin").value || "").trim().toLowerCase();
-    $("#adminMemberRows").innerHTML = ms.filter(m => !q || [m.memberId, m.nameBn, m.nameEn, m.mobile, m.whatsapp].some(v => String(v || "").toLowerCase().includes(q)))
-    .map(m => `<tr>
-     <td>${m.memberId}</td><td>${m.nameBn || m.nameEn || "—"}</td><td>${m.mobile || "—"}</td>
-     <td><span class="badge ${m.status}">${m.status}</span></td><td>৳${money(m.monthlyInstallment)}</td>
-     <td><button class="neutral" data-edit-member="${m.id}">Edit</button>
-     <button class="danger" data-delete-member="${m.id}">Delete</button></td>
-    </tr>`).join("") || `<tr><td colspan="6">No member data</td></tr>`;
-
-    document.querySelectorAll("[data-edit-member]").forEach(b => b.onclick = async () => {
-      const m = await one("members", b.dataset.editMember); if(m) showAdminMemberEditPopup(m);
-    });
-    document.querySelectorAll("[data-delete-member]").forEach(b => b.onclick = async () => {
-      const m = await one("members", b.dataset.deleteMember); if(m) confirmDeleteMember(m);
-    });
-  };
-
-  const paintTx = () => {
-    const q = String($("#txSearchAdmin").value || "").trim().toLowerCase();
-    $("#adminTxRows").innerHTML = ds.filter(d => !q || [d.memberId, d.memberName, d.date, d.type, d.paymentMethod, d.description].some(v => String(v || "").toLowerCase().includes(q)))
-    .sort((a,b) => (b.submittedAt||0) - (a.submittedAt||0))
-    .map(d => `<tr>
-     <td>${d.date || "—"}</td><td>${d.memberId} — ${d.memberName || ""}</td><td>${d.type || "—"}</td>
-     <td>৳${money(d.amount)}</td><td>${d.paymentMethod || "—"}</td><td><span class="badge ${d.status}">${d.status}</span></td>
-     <td><button class="neutral" data-edit-tx="${d.id}">Edit</button>
-     <button class="danger" data-delete-tx="${d.id}">Delete</button></td>
-    </tr>`).join("") || `<tr><td colspan="7">No transaction data</td></tr>`;
-
-    document.querySelectorAll("[data-edit-tx]").forEach(b => b.onclick = async () => {
-      const d = await one("deposits", b.dataset.editTx); if(d) showAdminTransactionEditPopup(d);
-    });
-    document.querySelectorAll("[data-delete-tx]").forEach(b => b.onclick = async () => {
-      const d = await one("deposits", b.dataset.deleteTx); if(d) confirmDeleteTransaction(d);
-    });
-  };
-
-  $("#memberSearchAdmin").oninput = paintMembers;
-  $("#txSearchAdmin").oninput = paintTx;
-  paintMembers(); paintTx();
-}
-
-function showAdminMemberEditPopup(m){
-  const old = document.getElementById("adminMemberEditModal"); if(old) old.remove();
-  const modal = document.createElement("div"); modal.id = "adminMemberEditModal"; modal.className = "modal";
-  modal.innerHTML = `<div class="modal-card" style="max-height:90vh;overflow:auto;width:min(720px,100%)">
-  <div class="section-title">Edit Member</div>
-  <div class="form-grid">
-   <div class="field"><label>Member ID</label><input id="emid" value="${m.memberId || ""}" readonly></div>
-   <div class="field"><label>Status</label><select id="estatus"><option value="active">Active</option><option value="inactive">Inactive</option><option value="pending">Pending</option><option value="rejected">Rejected</option></select></div>
-   <div class="field"><label>Name (Bangla)</label><input id="enameBn" value="${m.nameBn || ""}"></div>
-   <div class="field"><label>Name (English)</label><input id="enameEn" value="${m.nameEn || ""}"></div>
-   <div class="field"><label>Father's Name</label><input id="efather" value="${m.fatherBn || m.fatherEn || ""}"></div>
-   <div class="field"><label>Mother's Name</label><input id="emother" value="${m.motherBn || m.motherEn || ""}"></div>
-   <div class="field"><label>Mobile</label><input id="emobile" value="${m.mobile || ""}"></div>
-   <div class="field"><label>WhatsApp</label><input id="ewhatsapp" value="${m.whatsapp || ""}"></div>
-   <div class="field"><label>Email</label><input id="eemail" value="${m.email || ""}"></div>
-   <div class="field"><label>NID</label><input id="enid" value="${m.nid || ""}"></div>
-   <div class="field"><label>Profession</label><input id="eprofession" value="${m.profession || ""}"></div>
-   <div class="field"><label>Monthly Installment</label><input id="einstallment" type="number" min="0" step="0.01" value="${Number(m.monthlyInstallment||0)}"></div>
-   <div class="field" style="grid-column:1/-1"><label>Address</label><textarea id="eaddress">${m.address || ""}</textarea></div>
-  </div>
-  <div class="actions"><button class="primary" id="saveMemberEdit">Save Changes</button><button class="neutral" id="closeMemberEdit">Close</button></div>
-  </div>`;
-  document.body.appendChild(modal);
-  $("#estatus").value = m.status || "active";
-  $("#closeMemberEdit").onclick = () => modal.remove();
-  $("#saveMemberEdit").onclick = async () => {
-    const x = await one("members", m.id); if(!x) return;
-    x.status = $("#estatus").value;
-    x.nameBn = $("#enameBn").value.trim(); x.nameEn = $("#enameEn").value.trim();
-    x.fatherBn = $("#efather").value.trim(); x.motherBn = $("#emother").value.trim();
-    x.mobile = normalizeDigits($("#emobile").value);
-    x.whatsapp = normalizeDigits($("#ewhatsapp").value);
-    x.email = $("#eemail").value.trim(); x.nid = normalizeDigits($("#enid").value);
-    x.profession = $("#eprofession").value.trim(); x.monthlyInstallment = Number($("#einstallment").value || 0);
-    x.address = $("#eaddress").value.trim(); x.updatedAt = Date.now(); x.editedBy = session.username;
-    await put("members", x); await queue("updateMember", x); await log("গুরুত্বপূর্ণ Account Activity", `Member Edited: ${x.memberId}`);
-    modal.remove(); toast("Member information updated"); dataManagement();
-  };
-}
-
-function showAdminTransactionEditPopup(d){
-  const old = document.getElementById("adminTxEditModal"); if(old) old.remove();
-  const modal = document.createElement("div"); modal.id = "adminTxEditModal"; modal.className = "modal";
-  modal.innerHTML = `<div class="modal-card">
-  <div class="section-title">Edit Transaction</div>
-  <div class="form-grid">
-   <div class="field"><label>Member ID</label><input value="${d.memberId || ""}" readonly></div>
-   <div class="field"><label>Date</label><input id="etdate" value="${d.date || ""}"></div>
-   <div class="field"><label>Type</label><select id="ettype">
-    ${["মাসিক জমা","অগ্রিম জমা","বিশেষ চাঁদা","উত্তোলন","অন্যান্য"].map(x => `<option>${x}</option>`).join("")}
-   </select></div>
-   <div class="field"><label>Amount</label><input id="etamount" type="number" min="0.01" step="0.01" value="${Number(d.amount||0)}"></div>
-   <div class="field"><label>Payment Method</label><select id="etmethod"><option>Cash</option><option>Mobile Banking</option><option>Bank</option></select></div>
-   <div class="field"><label>Status</label><select id="etstatus"><option>approved</option><option>pending</option><option>rejected</option></select></div>
-   <div class="field" style="grid-column:1/-1"><label>Description</label><input id="etdesc" value="${d.description || ""}"></div>
-   <div class="field" style="grid-column:1/-1"><label>Note</label><textarea id="etnote">${d.note || ""}</textarea></div>
-  </div>
-  <div class="actions"><button class="primary" id="saveTxEdit">Save Changes</button><button class="neutral" id="closeTxEdit">Close</button></div>
-  </div>`;
-  document.body.appendChild(modal);
-  $("#ettype").value = d.type || "মাসিক জমা"; $("#etmethod").value = d.paymentMethod || "Cash"; $("#etstatus").value = d.status || "pending";
-  $("#closeTxEdit").onclick = () => modal.remove();
-  $("#saveTxEdit").onclick = async () => {
-    const x = await one("deposits", d.id); if(!x) return;
-    x.date = $("#etdate").value.trim(); x.type = $("#ettype").value; x.amount = Number($("#etamount").value || 0);
-    x.paymentMethod = $("#etmethod").value; x.status = $("#etstatus").value; x.description = $("#etdesc").value.trim();
-    x.note = $("#etnote").value.trim(); x.updatedAt = Date.now(); x.editedBy = session.username;
-    await put("deposits", x); await queue("updateDeposit", x); await log("গুরুত্বপূর্ণ Account Activity", `Transaction Edited: ${x.memberId} (${x.id})`);
-    modal.remove(); toast("Transaction updated"); dataManagement();
-  };
-}
-
-async function confirmDeleteMember(m){
-  if(!confirm(`Delete member ${m.memberId} — ${m.nameBn || m.nameEn}?`)) return;
-  await log("গুরুত্বপূর্ণ Account Activity", `Member Deleted: ${m.memberId}`);
-  await del("members", m.id);
-  const ds = await all("deposits");
-  for(const d of ds.filter(x => x.memberId === m.memberId)){
-    await del("deposits", d.id);
-  }
-  toast("Member and related transactions deleted");
-  dataManagement();
-}
-
-async function confirmDeleteTransaction(d){
-  if(!confirm(`Delete transaction ${d.memberId} — ৳${money(d.amount)}?`)) return;
-  await log("গুরুত্বপূর্ণ Account Activity", `Transaction Deleted: ${d.memberId} (${d.id})`);
-  await del("deposits", d.id);
-  toast("Transaction deleted");
   dataManagement();
 }
 
 async function makerPanel(){ await memberList(); }
+async function makerPanel(){ if(role(session) !== "MAKER"){ toast("Maker access required"); return; } await memberList(); }
 async function backup(){
+  if(role(session) !== "ADMIN"){ toast("Admin access required"); return; }
   let data = { members:await all("members"), deposits:await all("deposits"), notifications:await all("notifications"), activityLogs:await all("activityLogs"), settings:await all("settings") };
   $("#main").innerHTML = `<div class="section-title">Backup & Restore</div><div class="card"><button class="primary" id="b">Download Backup</button><input id="restore" type="file" accept=".json" style="margin-left:8px"><button class="danger" id="r">Restore</button><div class="notice">Restore replaces local IndexedDB data. Use only a trusted backup.</div></div>`;
   $("#b").onclick = () => {
-    let a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type:"application/json" }));
-    a.download = "Dhruvo_Sangsad_Backup.json";
-    a.click();
-    log("Backup");
-  };
-  $("#r").onclick = async () => {
-    if(!confirm("Restore backup?")) return;
-    let f = $("#restore").files[0];
-    if(!f) return toast("Select backup");
-    let x = JSON.parse(await f.text());
-    for(const s of stores.slice(0,5)) for(const v of x[s] || []){
-      if(!v || !v.id) continue;
-      suppressCloudQueue = true; try{ await put(s, v); }finally{ suppressCloudQueue = false; }
-      if(s === "members") await queue("updateMember", v);
-      else if(s === "deposits") await queue("updateDeposit", v);
-      else if(s === "notifications") await queue(v.type ? "createNotification" : "updateNotification", v);
-      else if(s === "activityLogs") await queue("createActivityLog", v);
-      else if(s === "settings") await queue("updateSettings", v);
-    }
-    await log("Restore", "Local backup restored and queued for cloud synchronization");
-    if(cloudReady) await syncQueue();
-    toast("Restore complete");
-    route("home");
-  };
-}
-
-async function settings(){
-  const ss = await all("settings");
-  const get = (k,d) => ss.find(x => x.key === k)?.value ?? d;
-  const isMember = role(session) === "MEMBER";
-  const member = isMember ? (await all("members")).find(x => x.memberId === session.memberId) : null;
-
-  $("#main").innerHTML = `
   <div class="section-title">Settings</div>
   ${!isMember ? `<div class="card" style="margin-bottom:12px"><div class="field"><label>প্রতিষ্ঠানের নাম</label><input id="setOrg" value="${get("orgName","ধ্রুব সংসদ")}"></div><div class="actions"><button class="primary" id="saveOrgName">Save Organization Name</button></div></div>` : ''}
+
+  <div class="card" style="margin-bottom:12px">
+   <div class="section-title">🌙 Theme / Dark Mode</div>
+   <div class="notice">AMOLED ডিসপ্লেতে <b>Dark</b> নির্বাচন করলে ফুল ব্ল্যাক (#000000) ব্যাকগ্রাউন্ড থাকবে — ব্যাটারি সাশ্রয়ী। <b>Auto</b>-এ ফোনের সেটিং অনুযায়ী চলবে।</div>
+   <div class="actions" style="gap:6px">
+    <button id="themeLight" class="${getSavedTheme() === "light" ? "primary" : "neutral"}" type="button">☀️ Light</button>
+    <button id="themeDark" class="${getSavedTheme() === "dark" ? "primary" : "neutral"}" type="button">🌙 Dark</button>
+    <button id="themeAuto" class="${getSavedTheme() === "auto" ? "primary" : "neutral"}" type="button">⚙️ Auto</button>
+   </div>
+  </div>
 
   <div class="card">
    <div class="section-title">🔐 Password Management</div>
    <div class="notice">আপনার বর্তমান পাসওয়ার্ড যাচাই করে নতুন পাসওয়ার্ড সেট করুন। সফল পরিবর্তনের পর সিস্টেম স্বয়ংক্রিয়ভাবে লগআউট হয়ে যাবে।</div>
-
-   <div class="field">
-    <label>Current Password</label>
-    <div class="password-field-wrap">
-      <input id="oldPw" type="password" autocomplete="current-password">
-      <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('oldPw', this)">👁</button>
-    </div>
-   </div>
-
-   <div class="field">
-    <label>New Password</label>
-    <div class="password-field-wrap">
-      <input id="newPw" type="password" autocomplete="new-password">
-      <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('newPw', this)">👁</button>
-    </div>
-   </div>
-
-   <div class="field">
-    <label>Confirm New Password</label>
-    <div class="password-field-wrap">
-      <input id="confirmPw" type="password" autocomplete="new-password">
-      <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('confirmPw', this)">👁</button>
-    </div>
-   </div>
-
-   <div class="actions">
-    <button class="primary" id="changePwBtn">Change Password</button>
-   </div>
-  </div>
-
-  <div id="settingsActivityLogSection"></div>`;
-
-  /* Render Activity Log inside Settings as a professional card option */
-  await renderActivityLogSettings($("#settingsActivityLogSection"));
-
-  if(!isMember){
-    $("#saveOrgName").onclick = async () => {
-      const org = $("#setOrg").value.trim() || "ধ্রুব সংসদ";
-      await put("settings", { id:"orgName", key:"orgName", value:org });
-      toast("Settings Saved");
     };
+  }
+
+  const themeButtons = { light:$("#themeLight"), dark:$("#themeDark"), auto:$("#themeAuto") };
+  for(const t of Object.keys(themeButtons)){
+    if(themeButtons[t]) themeButtons[t].onclick = () => { setTheme(t); settings(); };
   }
 
   $("#changePwBtn").onclick = async () => {
     const oldVal = $("#oldPw").value;
     const newVal = $("#newPw").value;
-    const confirmVal = $("#confirmPw").value;
-
-    if(isMember){
-      if(!member || oldVal !== member.localPassword){
-        showAlertPopup("Current Password সঠিক নয়।");
-        return;
-      }
-      if(newVal !== confirmVal){
-        showAlertPopup("New Password এবং Confirm Password মিল না হলে Popup দেখাবে।");
-        return;
-      }
-      if(newVal.length < 4){
-        showAlertPopup("নতুন পাসওয়ার্ড কমপক্ষে ৪ অক্ষরের হতে হবে।");
-        return;
-      }
-      if(cloudReady && member.authUid){
-        const cloudChanged = await supaChangePasswordForSession(session, oldVal, newVal);
-        if(!cloudChanged) return showAlertPopup("Supabase-এ Password পরিবর্তন করা যায়নি। Internet connection পরীক্ষা করুন।");
-      }
-      member.localPassword = newVal;
-      member.updatedAt = Date.now();
-      await put("members", member);
-      await queue("updateMember", member);
-      if(!cloudReady) await queue("changePassword", { role:"MEMBER", memberId:member.memberId, oldPassword:oldVal, newPassword:newVal });
-    } else {
-      const curAdminPw = get("adminPassword", "admin");
-      if(session.username === "admin"){
-        if(oldVal !== curAdminPw){
-          showAlertPopup("Current Password সঠিক নয়।");
-          return;
-        }
-        if(newVal !== confirmVal){
-          showAlertPopup("New Password এবং Confirm Password মিল না হলে Popup দেখাবে।");
-          return;
-        }
-        if(newVal.length < 4){
-          showAlertPopup("নতুন পাসওয়ার্ড কমপক্ষে ৪ অক্ষরের হতে হবে।");
-          return;
-        }
-        if(cloudReady){
-          const cloudChanged = await supaChangePasswordForSession(session, oldVal, newVal);
-          if(!cloudChanged) return showAlertPopup("Supabase-এ Password পরিবর্তন করা যায়নি। Internet connection পরীক্ষা করুন।");
-        }
-        await put("settings", { id:"adminPassword", key:"adminPassword", value:newVal });
-        if(!cloudReady) await queue("changePassword", { role:"ADMIN", oldPassword:oldVal, newPassword:newVal });
-      } else {
-        let makers = await all("members");
-        let mk = makers.find(x => x.type === "maker" && x.username === session.username);
-        if(!mk || oldVal !== mk.localPassword){
-          showAlertPopup("Current Password সঠিক নয়।");
-          return;
-        }
-        if(newVal !== confirmVal){
-          showAlertPopup("New Password এবং Confirm Password মিল না হলে Popup দেখাবে।");
-          return;
-        }
-        if(cloudReady && mk.authUid){
-          const cloudChanged = await supaChangePasswordForSession({ ...session, memberRecord:mk }, oldVal, newVal);
-          if(!cloudChanged) return showAlertPopup("Supabase-এ Password পরিবর্তন করা যায়নি। Internet connection পরীক্ষা করুন।");
-        }
-        mk.localPassword = newVal;
-        await put("members", mk);
-        await queue("updateMember", mk);
-        if(!cloudReady) await queue("changePassword", { role:"MAKER", username:mk.username, oldPassword:oldVal, newPassword:newVal });
-      }
-    }
-
-    await log("Password Change Activity", "Password successfully changed");
-
-    showAlertPopup("Password পরিবর্তন সফল হয়েছে!", true, async () => {
-      await log("Login/Logout Activity", `Auto Logged Out after password change: ${session.username || session.memberId}`);
-      session = null;
-      try{ sessionStorage.removeItem("dhruvoSession"); }catch(e){}
-      renderLogin();
-    });
-  };
-}
-
-/* Show/Hide Password Toggle Helper Function */
-function togglePasswordVisibility(fieldId, btn){
-  const field = document.getElementById(fieldId);
-  if(field.type === "password"){
-    field.type = "text";
-    btn.style.color = "#5eaa7b";
-  } else {
-    field.type = "password";
-    btn.style.color = "#6b7470";
-  }
-}
 
 async function init(){
   try{
+    applyTheme();
     await openDB();
     online = navigator.onLine;
 
-    /* Initialize Supabase first, before any UI rendering */
-    supaInit();
-    updateDbStatus(null); /* connecting */
-    const ok = await cloudCheck();
-    updateDbStatus(ok);
-
-    /* Supabase password-recovery link: the URL contains ?type=recovery */
-    if(supa && /type=recovery/.test(window.location.search)){
-      const { data: rec } = await supa.auth.getSession();
-      if(rec?.session){ showRecoveryForm(); return; }
-    }
-
-    /* 1) Auto session restore from the persisted Supabase Auth session */
-    if(supa){
-      const { data: sd } = await supa.auth.getSession();
-      if(sd?.session){
-        if(await restoreFromSupa(sd.session)){
-          renderApp();
-          if(cloudReady) startCloudAfterLogin(session.role);
-        }
-      }
-    }
-
-    /* 2) Fallback: locally cached session (offline restore) */
-    if(!session){
-      session = loadSession();
-      if(session){
-        if(session.memberRecordId && !session.memberRecord) session.memberRecord = await one("members", session.memberRecordId);
-        renderApp();
-        if(cloudReady) startCloudAfterLogin(session.role);
-      }else{
-        renderLogin();
-        /* Keep the login-page connection status fresh */
-        const statusUpdateInterval = setInterval(() => {
-          updateDbStatus(lastDbState);
-        }, 1000);
-        window.addEventListener("loginSuccess", () => {
-          clearInterval(statusUpdateInterval);
-        }, { once:true });
-      }
-    }
-
-    window.addEventListener("online", async () => {
-      online = true;
-      const ok2 = await cloudCheck();
-      updateDbStatus(ok2);
-      if(ok2){
-        toast("Online / Cloud sync starting");
-        try{ await migrateLocalToCloud(); await startRealtime(); await syncQueue(); await refreshCurrentView(); startReconcileTimer(); }catch(e){ console.warn("online sync", e); }
-      }
-    });
-    window.addEventListener("offline", () => {
-      online = false;
-      updateDbStatus(false);
-      toast("Offline / Local mode");
-    });
-
-    /* Periodic connection check for robustness */
-    setInterval(async () => {
-      const ok3 = await cloudCheck();
-      updateDbStatus(ok3);
-    }, 30000);
-  }catch(e){
-    console.error("Application initialization", e);
-    try{ renderLogin(); }catch(_e){}
-  }
-}
-init();
-</script>
-</body>
-</html>
