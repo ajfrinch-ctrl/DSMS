@@ -139,9 +139,7 @@ create table if not exists public.settings (
 -- ----------------------------------------------------------------------------
 do $$
 declare
-  t  text;
-  c  text;
-  ty text;
+  r    text[];
   cols text[][] := array[
     -- profiles
     ['profiles','uid','uuid'],
@@ -224,8 +222,8 @@ declare
     ['settings','updated_at','bigint']
   ];
 begin
-  foreach t, c, ty slice 1 in array cols loop
-    execute format('alter table public.%I add column if not exists %I %s', t, c, ty);
+  foreach r slice 1 in array cols loop
+    execute format('alter table public.%I add column if not exists %I %s', r[1], r[2], r[3]);
   end loop;
 end
 $$;
@@ -237,7 +235,7 @@ $$;
 -- ----------------------------------------------------------------------------
 do $$
 declare
-  r   record;
+  r   text[];
   cur text;
   ts_cols text[][] := array[
     ['members','created_at'],
